@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -84,11 +84,17 @@ const formatDaysOfWeek = (days: number[]) => {
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
-  const [userCar, setUserCar] = useState<UserCar | null>(null);
+  // Change the interface to handle multiple cars
+  const [userCars, setUserCars] = useState<UserCar[]>([]);
+  const [activeCar, setActiveCar] = useState<UserCar | null>(null);
   const [hasSubscription, setHasSubscription] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Update your state initialization to check for the activeTab in location state
+  const [activeTab, setActiveTab] = useState(
+    location.state?.activeTab || 'dashboard'
+  );
   const [recommendedServices, setRecommendedServices] = useState<any[]>([]);
   const [bookedPlans, setBookedPlans] = useState<BookedPlan[]>([]);
 
@@ -149,11 +155,12 @@ export const Dashboard = () => {
     checkUser();
   }, []);
 
+  // Update fetchRecommendedServices to use activeCar instead of userCar
   useEffect(() => {
-    if (userCar) {
-      fetchRecommendedServices(userCar.size);
+    if (activeCar) {
+      fetchRecommendedServices(activeCar.size);
     }
-  }, [userCar]);
+  }, [activeCar]);
 
   useEffect(() => {
     // In a real app, fetch from your database
@@ -162,7 +169,7 @@ export const Dashboard = () => {
       // Check for plan info passed from plan-selection screen
       const state = window.history.state?.usr;
       
-      if (state?.success && userCar) {
+      if (state?.success && activeCar) {
         // Create a new booked plan based on the state data
         const mockPlan: BookedPlan = {
           id: 'plan-' + Date.now(),
@@ -190,7 +197,7 @@ export const Dashboard = () => {
         window.history.replaceState({}, document.title);
       } else {
         // Mock existing plans
-        const mockPlans: BookedPlan[] = userCar ? [
+        const mockPlans: BookedPlan[] = activeCar ? [
           {
             id: 'plan-1',
             name: 'Premium Monthly Plan',
@@ -216,7 +223,7 @@ export const Dashboard = () => {
     };
     
     fetchBookedPlans();
-  }, [userCar]);
+  }, [activeCar]);
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -231,8 +238,7 @@ export const Dashboard = () => {
       user_metadata: session.user.user_metadata,
     });
     
-    // Check if user has a subscription (this would be from your actual database)
-    // For demo purposes, we'll just simulate a subscription check
+    // Check if user has a subscription
     const { data: subscriptionData } = await supabase
       .from('wipers')
       .select('*')
@@ -240,17 +246,15 @@ export const Dashboard = () => {
       
     setHasSubscription(!!subscriptionData);
     
-    // Fetch user's car information
-    // This would be replaced with an actual query to your cars table
-    // For now we'll use a placeholder car
+    // Fetch user's cars information - remove .single() to get all cars
     const { data: carData } = await supabase
       .from('user_cars')
       .select('*')
-      .eq('user_id', session.user.id)
-      .single();
+      .eq('user_id', session.user.id);
     
-    if (carData) {
-      setUserCar(carData);
+    if (carData && carData.length > 0) {
+      setUserCars(carData);
+      setActiveCar(carData[0]); // Set the first car as active by default
     }
     
     setLoading(false);
@@ -411,14 +415,15 @@ export const Dashboard = () => {
               </p>
             </div>
             
-            {userCar ? (
+            {/* Update the welcome banner to use activeCar instead of userCar */}
+            {activeCar ? (
               <div className="mt-4 md:mt-0 bg-gray-800 rounded-lg p-3 flex items-center space-x-3">
                 <div className="bg-gray-700 p-2 rounded-md">
                   <CarIcon className="text-white w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-white font-medium">{userCar.year} {userCar.make} {userCar.model}</div>
-                  <div className="text-gray-400 text-sm">{userCar.color} • {userCar.plate_number || 'No plate'}</div>
+                  <div className="text-white font-medium">{activeCar.year} {activeCar.make} {activeCar.model}</div>
+                  <div className="text-gray-400 text-sm">{activeCar.color} • {activeCar.plate_number || 'No plate'}</div>
                 </div>
               </div>
             ) : (
@@ -477,7 +482,7 @@ export const Dashboard = () => {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div>
-            {userCar ? (
+            {activeCar ? (
               <div className="space-y-8">
                 {/* Quick stats overview */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -972,123 +977,147 @@ export const Dashboard = () => {
               </Button>
             </div>
             
-            {userCar ? (
+            {userCars.length > 0 ? (
               <div className="space-y-6">
-                <Card className="overflow-hidden border-0 rounded-2xl shadow-lg">
-                  <div className="bg-gradient-to-r from-gray-900 to-black p-6">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-bold text-white">Primary Vehicle</h3>
-                      <Badge className="bg-[#c5e82e] text-black">Active</Badge>
-                    </div>
-                  </div>
-                  
-                  <CardContent className="p-0">
-                    <div className="p-6 flex flex-col md:flex-row">
-                      <div className="md:w-1/3 mb-6 md:mb-0 md:pr-6">
-                        <div className="bg-gray-100 rounded-xl h-64 flex items-center justify-center">
-                          <div className="bg-gray-200 p-4 rounded-full">
-                            <CarIcon className="w-16 h-16 text-gray-400" />
-                          </div>
-                        </div>
-                        <div className="flex justify-center mt-4">
-                          <Button variant="outline" size="sm" className="rounded-full text-xs">
-                            <CameraIcon className="w-3 h-3 mr-1" />
-                            Upload Photo
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="md:w-2/3">
-                        <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                          {userCar.year} {userCar.make} {userCar.model}
-                          <Badge className="bg-gray-100 text-gray-700">
-                            {userCar.size.charAt(0).toUpperCase() + userCar.size.slice(1)}
-                          </Badge>
-                        </h3>
-                        
-                        <div className="grid grid-cols-2 gap-4 md:gap-6 mb-6">
-                          <div className="bg-gray-50 rounded-xl p-4">
-                            <p className="text-sm text-gray-500">Color</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="w-4 h-4 rounded-full bg-gray-300"></div>
-                              <p className="font-medium">{userCar.color}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-gray-50 rounded-xl p-4">
-                            <p className="text-sm text-gray-500">License Plate</p>
-                            <p className="font-medium mt-1">{userCar.plate_number || 'Not provided'}</p>
-                          </div>
-                          
-                          <div className="bg-gray-50 rounded-xl p-4">
-                            <p className="text-sm text-gray-500">Recommended Service</p>
-                            <p className="font-medium mt-1">{
-                              userCar.size === 'suv' ? 'Deep Clean Package' :
-                              userCar.size === 'small' ? 'Compact Wash' : 
-                              'Standard Exterior Wash'
-                            }</p>
-                          </div>
-                          
-                          <div className="bg-gray-50 rounded-xl p-4">
-                            <p className="text-sm text-gray-500">Next Service</p>
-                            <p className="font-medium mt-1">{
-                              bookedPlans.length > 0 
-                                ? format(new Date(bookedPlans[0].nextServiceDate), 'MMM d, yyyy')
-                                : 'No service scheduled'
-                            }</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-3 mt-6">
-                          <Button className="bg-black text-white hover:bg-gray-800">
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit Vehicle
-                          </Button>
-                          <Button variant="outline">
-                            <HistoryIcon className="w-4 h-4 mr-2" />
-                            Service History
-                          </Button>
-                          <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700">
-                            <Trash2Icon className="w-4 h-4 mr-2" />
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Separator />
-                    
-                    {/* Service history section */}
-                    <div className="p-6">
-                      <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                        <HistoryIcon className="w-5 h-5 text-[#c5e82e]" />
-                        Recent Services
-                      </h4>
-                      
-                      <div className="space-y-4">
-                        {[1, 2, 3].map(item => (
-                          <div key={item} className="flex justify-between items-center border-b pb-4 last:border-0">
-                            <div className="flex gap-4">
-                              <div className="bg-gray-100 p-2 rounded-lg">
-                                <DropletIcon className="w-5 h-5 text-gray-600" />
-                              </div>
-                              <div>
-                                <div className="font-medium">{['Full Exterior Wash', 'Premium Detailing', 'Quick Clean'][item % 3]}</div>
-                                <div className="text-sm text-gray-500">April {20 + item}, 2025</div>
-                              </div>
-                            </div>
-                            <Badge className="bg-green-100 text-green-800">Completed</Badge>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <Button variant="ghost" className="w-full mt-4 text-gray-600">
-                        View All History
+                {/* Car selection tabs if multiple cars */}
+                {userCars.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {userCars.map((car) => (
+                      <Button
+                        key={car.id}
+                        variant={activeCar?.id === car.id ? "default" : "outline"}
+                        className={`rounded-full flex items-center gap-2 ${
+                          activeCar?.id === car.id ? "bg-[#c5e82e] text-black" : ""
+                        }`}
+                        onClick={() => setActiveCar(car)}
+                      >
+                        <CarIcon className="w-4 h-4" />
+                        {car.make} {car.model}
                       </Button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Display active car details */}
+                {activeCar && (
+                  <Card className="overflow-hidden border-0 rounded-2xl shadow-lg">
+                    <div className="bg-gradient-to-r from-gray-900 to-black p-6">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xl font-bold text-white">
+                          {userCars.length > 1 ? "Selected Vehicle" : "Primary Vehicle"}
+                        </h3>
+                        <Badge className="bg-[#c5e82e] text-black">Active</Badge>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-                
+                    
+                    <CardContent>
+                      <div className="p-6 flex flex-col md:flex-row">
+                        <div className="md:w-1/3 mb-6 md:mb-0 md:pr-6">
+                          <div className="bg-gray-100 rounded-xl h-64 flex items-center justify-center">
+                            <div className="bg-gray-200 p-4 rounded-full">
+                              <CarIcon className="w-16 h-16 text-gray-400" />
+                            </div>
+                          </div>
+                          <div className="flex justify-center mt-4">
+                            <Button variant="outline" size="sm" className="rounded-full text-xs">
+                              <CameraIcon className="w-3 h-3 mr-1" />
+                              Upload Photo
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="md:w-2/3">
+                          <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                            {activeCar.year} {activeCar.make} {activeCar.model}
+                            <Badge className="bg-gray-100 text-gray-700">
+                              {activeCar.size.charAt(0).toUpperCase() + activeCar.size.slice(1)}
+                            </Badge>
+                          </h3>
+                          
+                          <div className="grid grid-cols-2 gap-4 md:gap-6 mb-6">
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <p className="text-sm text-gray-500">Color</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="w-4 h-4 rounded-full bg-gray-300"></div>
+                                <p className="font-medium">{activeCar.color}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <p className="text-sm text-gray-500">License Plate</p>
+                              <p className="font-medium mt-1">{activeCar.plate_number || 'Not provided'}</p>
+                            </div>
+                            
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <p className="text-sm text-gray-500">Recommended Service</p>
+                              <p className="font-medium mt-1">{
+                                activeCar.size === 'suv' ? 'Deep Clean Package' :
+                                activeCar.size === 'small' ? 'Compact Wash' : 
+                                'Standard Exterior Wash'
+                              }</p>
+                            </div>
+                            
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <p className="text-sm text-gray-500">Next Service</p>
+                              <p className="font-medium mt-1">{
+                                bookedPlans.length > 0 
+                                  ? format(new Date(bookedPlans[0].nextServiceDate), 'MMM d, yyyy')
+                                  : 'No service scheduled'
+                              }</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-3 mt-6">
+                            <Button className="bg-black text-white hover:bg-gray-800">
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit Vehicle
+                            </Button>
+                            <Button variant="outline">
+                              <HistoryIcon className="w-4 h-4 mr-2" />
+                              Service History
+                            </Button>
+                            <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700">
+                              <Trash2Icon className="w-4 h-4 mr-2" />
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Separator />
+                      
+                      {/* Service history section */}
+                      <div className="p-6">
+                        <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                          <HistoryIcon className="w-5 h-5 text-[#c5e82e]" />
+                          Recent Services
+                        </h4>
+                        
+                        <div className="space-y-4">
+                          {[1, 2, 3].map(item => (
+                            <div key={item} className="flex justify-between items-center border-b pb-4 last:border-0">
+                              <div className="flex gap-4">
+                                <div className="bg-gray-100 p-2 rounded-lg">
+                                  <DropletIcon className="w-5 h-5 text-gray-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium">{['Full Exterior Wash', 'Premium Detailing', 'Quick Clean'][item % 3]}</div>
+                                  <div className="text-sm text-gray-500">April {20 + item}, 2025</div>
+                                </div>
+                              </div>
+                              <Badge className="bg-green-100 text-green-800">Completed</Badge>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <Button variant="ghost" className="w-full mt-4 text-gray-600">
+                          View All History
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">

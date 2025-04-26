@@ -10,6 +10,7 @@ import { AuthGuard } from "./components/AuthGuard";
 import { LoginGuard } from "./components/LoginGuard"; 
 import PlanSelection from "./screens/PlanSelection/PlanSelection"; // Remove curly braces
 import { Profile } from "./screens/Profile/Profile";
+import "./index.css";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>

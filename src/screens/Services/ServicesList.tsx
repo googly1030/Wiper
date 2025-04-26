@@ -25,7 +25,8 @@ const carImageMap = {
   hatchback: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1000&auto=format&fit=crop",
   sedan: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=1000&auto=format&fit=crop",
   coupe: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000&auto=format&fit=crop",
-  suv: "https://images.unsplash.com/photo-1533558701576-23c65e0272fb?q=80&w=1000&auto=format&fit=crop"
+  suv: "https://images.unsplash.com/photo-1533558701576-23c65e0272fb?q=80&w=1000&auto=format&fit=crop",
+  luxury: "https://images.unsplash.com/photo-1580274455191-1c62238fa333?q=80&w=1000&auto=format&fit=crop"
 };
 
 // Service images by category
@@ -76,7 +77,7 @@ interface UserCar {
   model: string;
   year: number;
   color: string;
-  size: 'hatchback' | 'sedan' | 'coupe' | 'suv';
+  size: 'hatchback' | 'sedan' | 'coupe' | 'suv' | 'luxury';
   plate_number?: string;
 }
 
@@ -107,7 +108,9 @@ const ServicesList = () => {
   const [currentCategory, setCurrentCategory] = useState<string>("Monthly");
   const [showServiceDetails, setShowServiceDetails] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState<boolean>(false);
-
+  const [userCars, setUserCars] = useState<UserCar[]>([]);
+  const [selectedCarIndex, setSelectedCarIndex] = useState<number>(0);
+  
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -130,22 +133,26 @@ const ServicesList = () => {
         
         setUser(session.user);
         
-        // Fetch user's car information
+        // Fetch user's car information - UPDATED to handle multiple cars
         const { data: carData, error: carError } = await supabase
           .from('user_cars')
           .select('*')
-          .eq('user_id', session.user.id)
-          .single();
+          .eq('user_id', session.user.id);
         
         if (carError) {
           console.error('Error fetching car data:', carError);
           return;
         }
         
-        if (carData) {
-          setUserCar(carData);
+        if (carData && carData.length > 0) {
+          // Store all cars
+          setUserCars(carData);
+          
+          // Use the first car as default selection
+          setUserCar(carData[0]);
+          
           // Fetch services for this car type
-          fetchServices(carData.size);
+          fetchServices(carData[0].size);
         } else {
           // Redirect to add car page if no car found
           navigate('/add-car');
@@ -363,6 +370,60 @@ const ServicesList = () => {
           category: 'Protection',
           popular: true
         }
+      ],
+      // New luxury car services
+      luxury: [
+        ...monthlyPlans,
+        {
+          id: 'lux1',
+          name: 'Premium Concierge Wash',
+          description: 'Complete exterior wash with hand-applied premium waxes and sealants',
+          duration: '90 mins',
+          price: 5999, // ₹3,999
+          category: 'Exterior',
+          popular: true
+        },
+        {
+          id: 'lux2',
+          name: 'White Glove Interior Detail',
+          description: 'Meticulous interior detailing with premium leather conditioning and fabric treatments',
+          duration: '120 mins',
+          price: 8999, // ₹5,999
+          category: 'Interior'
+        },
+        {
+          id: 'lux3',
+          name: 'Ceramic Pro Treatment',
+          description: 'Professional-grade ceramic coating that offers superior protection for luxury finishes',
+          duration: '180 mins',
+          price: 22999, // ₹12,999
+          category: 'Protection',
+          popular: true
+        },
+        {
+          id: 'lux4',
+          name: 'Executive Detail Package',
+          description: 'Comprehensive interior and exterior detailing for the discerning luxury vehicle owner',
+          duration: '240 mins',
+          price: 8999, // ₹8,999
+          category: 'Interior'
+        },
+        {
+          id: 'lux5',
+          name: 'Paint Correction & Enhancement',
+          description: 'Multi-stage paint correction to remove swirl marks and enhance the showroom finish',
+          duration: '300 mins',
+          price: 15999, // ₹15,999
+          category: 'Exterior'
+        },
+        {
+          id: 'lux6',
+          name: 'Express Luxury Refresh',
+          description: 'Quick but thorough exterior wash and interior refresh for luxury vehicles',
+          duration: '60 mins',
+          price: 2999, // ₹2,999
+          category: 'Express'
+        }
       ]
     };
     
@@ -397,7 +458,7 @@ const ServicesList = () => {
     
     // Navigate to booking page
     setTimeout(() => {
-      navigate('/booking', { 
+      navigate('/', { 
         state: { 
           serviceId, 
           carDetails: userCar 
@@ -485,6 +546,16 @@ const ServicesList = () => {
     );
   }
 
+  // Add a function to switch between cars
+  const switchCar = (index: number) => {
+    if (userCars[index]) {
+      setSelectedCarIndex(index);
+      setUserCar(userCars[index]);
+      fetchServices(userCars[index].size);
+    }
+  };
+
+  // Modify the Hero Section to include car switching UI
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header component in a fixed position */}
@@ -526,7 +597,32 @@ const ServicesList = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <Badge className="mb-4 bg-[#c5e82e] text-black font-medium px-3 py-1">Your Vehicle</Badge>
+                <div className="flex items-center gap-3 mb-4">
+                  <Badge className="bg-[#c5e82e] text-black font-medium px-3 py-1">Your Vehicle</Badge>
+                  
+                  {/* Only show car switcher if user has multiple cars */}
+                  {userCars.length > 1 && (
+                    <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-full pl-2 pr-3 py-1 border border-white/20">
+                      <span className="text-white text-xs mr-2">Switch car:</span>
+                      <div className="flex gap-1">
+                        {userCars.map((car, index) => (
+                          <button
+                            key={car.id}
+                            onClick={() => switchCar(index)}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                              selectedCarIndex === index 
+                                ? 'bg-[#c5e82e] text-black' 
+                                : 'bg-black/50 text-white hover:bg-black/70'
+                            }`}
+                          >
+                            <span className="text-xs font-medium">{index + 1}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
                   {userCar?.year || ''} {userCar?.make || ''} <br />
                   <span className="text-[#c5e82e]">{userCar?.model || ''}</span>
@@ -555,7 +651,10 @@ const ServicesList = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button className="bg-[#c5e82e] hover:bg-[#d0f53a] text-black text-lg font-medium px-8 py-6 rounded-full">
+                  <Button 
+                    className="bg-[#c5e82e] hover:bg-[#d0f53a] text-black text-lg font-medium px-8 py-6 rounded-full"
+                    onClick={() => navigate('/dashboard')}
+                  >
                     View Services
                   </Button>
                 </motion.div>
@@ -841,7 +940,10 @@ const ServicesList = () => {
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               Select a monthly plan and enjoy premium car care on your schedule
             </p>
-            <Button className="bg-black hover:bg-gray-800 text-white text-lg px-8 py-6 rounded-full border-b-4 border-[#c5e82e]">
+            <Button 
+              className="bg-black hover:bg-gray-800 text-white text-lg px-8 py-6 rounded-full border-b-4 border-[#c5e82e]"
+              onClick={() => navigate('/dashboard', { state: { activeTab: 'plans' } })}
+            >
               View Monthly Plans
             </Button>
           </motion.div>
@@ -859,13 +961,14 @@ const ServicesList = () => {
             onClick={() => setShowServiceDetails(null)}
           >
             <motion.div
-              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto service-details-modal"
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
               initial={{ scale: 0.9, y: 20, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 20, opacity: 0 }}
               transition={{ type: "spring", damping: 25 }}
             >
+              {/* Rest of your modal code remains the same */}
               {services.filter(s => s.id === showServiceDetails).map(service => (
                 <div key={service.id} className="p-0">
                   <div className="h-64 relative">
