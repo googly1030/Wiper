@@ -1,0 +1,1 @@
+export { AndroidCompact } from "./AndroidCompact";
