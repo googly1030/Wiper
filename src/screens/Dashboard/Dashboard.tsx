@@ -3,10 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, clearAuthStorage } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge'; // Add Badge component import
 import { Separator } from '../../components/ui/separator';
-import { CalendarIcon, CarIcon, ClockIcon, PlusIcon, WrenchIcon } from 'lucide-react';
+import { 
+  CarIcon, 
+  PlusIcon, 
+  WrenchIcon,
+  Calendar, 
+  ChevronRightIcon, 
+  DropletIcon, 
+  CheckCircleIcon, 
+  ShieldCheckIcon,
+  ClockIcon,
+  CalendarIcon
+} from 'lucide-react';
 import Header from '../../components/Header';
-import { motion } from 'framer-motion';
+import { format, addDays } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Wiper {
   id: string;
@@ -41,6 +54,24 @@ interface Plan {
   features: string[];
 }
 
+interface BookedPlan {
+  id: string;
+  name: string;
+  startDate: string;
+  daysOfWeek: number[];
+  timeSlots: string[];
+  features: string[];
+  nextServiceDate: string;
+  completedServices: number;
+  totalServices: number;
+  price: number;
+}
+
+const formatDaysOfWeek = (days: number[]) => {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return days.map(day => dayNames[day]).join(', ');
+};
+
 export const Dashboard = () => {
   const navigate = useNavigate();
   const [wipers, setWipers] = useState<Wiper[]>([]);
@@ -50,6 +81,7 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [recommendedServices, setRecommendedServices] = useState<any[]>([]);
+  const [bookedPlans, setBookedPlans] = useState<BookedPlan[]>([]);
 
   // Placeholder plans - replace with actual plans from your database
   const plans: Plan[] = [
@@ -82,6 +114,69 @@ export const Dashboard = () => {
     if (userCar) {
       fetchRecommendedServices(userCar.size);
     }
+  }, [userCar]);
+
+  useEffect(() => {
+    // In a real app, fetch from your database
+    // For demo, we'll use mock data
+    const fetchBookedPlans = async () => {
+      // Check for plan info passed from plan-selection screen
+      const state = window.history.state?.usr;
+      
+      if (state?.success && userCar) {
+        // Create a new booked plan based on the state data
+        const mockPlan: BookedPlan = {
+          id: 'plan-' + Date.now(),
+          name: 'Premium Monthly Plan',
+          startDate: format(new Date(), 'yyyy-MM-dd'),
+          daysOfWeek: [1, 3, 5], // Mon, Wed, Fri
+          timeSlots: ['10:00 AM - 11:30 AM'],
+          features: [
+            '6 exterior washes per week',
+            '2 interior cleanings per month',
+            'Priority scheduling',
+            'Slot based on your selection',
+            'Daily updates with photos'
+          ],
+          nextServiceDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+          completedServices: 0,
+          totalServices: 24,
+          price: 5999
+        };
+        
+        // Add the new plan
+        setBookedPlans([mockPlan]);
+        
+        // Clear the state to avoid duplication on refresh
+        window.history.replaceState({}, document.title);
+      } else {
+        // Mock existing plans
+        const mockPlans: BookedPlan[] = userCar ? [
+          {
+            id: 'plan-1',
+            name: 'Premium Monthly Plan',
+            startDate: '2025-04-15',
+            daysOfWeek: [1, 3, 5], // Mon, Wed, Fri
+            timeSlots: ['10:00 AM - 11:30 AM'],
+            features: [
+              '6 exterior washes per week',
+              '2 interior cleanings per month',
+              'Priority scheduling',
+              'Slot based on your selection',
+              'Daily updates with photos'
+            ],
+            nextServiceDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+            completedServices: 8,
+            totalServices: 24,
+            price: 5999
+          }
+        ] : [];
+        
+        setBookedPlans(mockPlans);
+      }
+    };
+    
+    fetchBookedPlans();
   }, [userCar]);
 
   const checkUser = async () => {
@@ -205,7 +300,7 @@ export const Dashboard = () => {
           description: 'Complete exterior wash designed specifically for sedan bodies',
           duration: '45 mins',
           price: 24.99,
-          image: '/services/sedan-wash.jpg'
+          image: 'https://images.unsplash.com/photo-1636427743695-eccbf1c05af6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
         },
         {
           id: '2',
@@ -213,7 +308,7 @@ export const Dashboard = () => {
           description: 'Premium interior detailing for a professional clean look',
           duration: '60 mins',
           price: 44.99,
-          image: '/services/executive-interior.jpg'
+          image: 'https://images.unsplash.com/photo-1602786195490-c785a218df40?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
         },
         {
           id: '3',
@@ -221,7 +316,7 @@ export const Dashboard = () => {
           description: 'Quick wash and vacuum ideal for daily drivers',
           duration: '35 mins',
           price: 29.99,
-          image: '/services/commuter-special.jpg'
+          image: 'https://images.unsplash.com/photo-1605723517503-3cadb5818a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
         }
       ],
       coupe: [
@@ -406,17 +501,32 @@ export const Dashboard = () => {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">Next Service</CardTitle>
-                        <div className="bg-white p-2 rounded-full">
+                        <div className="bg-white border border-gray-200 p-2 rounded-full">
                           <CalendarIcon className="w-5 h-5 text-gray-700" />
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-3xl font-bold">Tomorrow</div>
-                      <p className="text-sm text-gray-500 mt-2">9:00 AM - 10:00 AM</p>
-                      <Button variant="outline" className="w-full mt-4 text-sm">
-                        Reschedule
-                      </Button>
+                      <div className="rounded-lg bg-[#c5e82e]/10 p-4 border border-[#c5e82e]/30 mb-4">
+                        <div className="flex items-center">
+                          <ClockIcon className="w-4 h-4 text-[#c5e82e] mr-2" />
+                          <span className="text-sm font-medium">{bookedPlans.length > 0 ? bookedPlans[0].timeSlots[0] : "9:00 AM - 10:00 AM"}</span>
+                        </div>
+                        <div className="text-2xl font-bold mt-1">Tomorrow</div>
+                        <div className="text-sm text-gray-600 mt-1 flex items-center">
+                          <ShieldCheckIcon className="w-3.5 h-3.5 mr-1.5" />
+                          Exterior + Interior Cleaning
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <Button variant="outline" className="w-[48%] text-sm rounded-full">
+                          Skip
+                        </Button>
+                        <Button variant="outline" className="w-[48%] text-sm rounded-full border-[#c5e82e] bg-[#c5e82e]/5 text-black hover:bg-[#c5e82e]/10">
+                          Reschedule
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                   
@@ -439,63 +549,185 @@ export const Dashboard = () => {
                     </CardContent>
                   </Card>
                   
-                  <Card className="bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Current Plan</CardTitle>
-                        <div className="bg-black p-2 rounded-full">
-                          <svg className="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
+                  {bookedPlans.length > 0 ? (
+                    <AnimatePresence>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="col-span-3"
+                      >
+                        <Card className="overflow-hidden border-0 shadow-lg">
+                          <div className="bg-gradient-to-r from-gray-900 to-black p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h3 className="text-xl font-bold text-white">Your Active Plan</h3>
+                                <p className="text-[#c5e82e] mt-1">
+                                  Next service tomorrow
+                                </p>
+                              </div>
+                              <Badge className="bg-[#c5e82e] text-black px-3 py-1">
+                                Active
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <CardContent className="p-0">
+                            {/* Plan details section */}
+                            <div className="p-6">
+                              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+                                <div>
+                                  <h3 className="text-2xl font-bold">{bookedPlans[0].name}</h3>
+                                  <p className="text-gray-500 mt-1">Started on {format(new Date(bookedPlans[0].startDate), 'MMM dd, yyyy')}</p>
+                                </div>
+                                <div className="mt-4 md:mt-0">
+                                  <div className="text-2xl font-bold">₹{bookedPlans[0].price.toLocaleString('en-IN')}</div>
+                                  <p className="text-gray-500 text-sm text-right">per month</p>
+                                </div>
+                              </div>
+
+                              {/* Progress bar */}
+                              <div className="mb-6">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="font-medium">Monthly Progress</span>
+                                  <span className="text-sm text-gray-600">
+                                    {bookedPlans[0].completedServices} of {bookedPlans[0].totalServices} services
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-3">
+                                  <motion.div 
+                                    className="bg-[#c5e82e] h-3 rounded-full"
+                                    initial={{ width: 0 }}
+                                    animate={{ 
+                                      width: `${(bookedPlans[0].completedServices / bookedPlans[0].totalServices) * 100}%` 
+                                    }}
+                                    transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
+                                  ></motion.div>
+                                </div>
+                              </div>
+                              
+                              {/* Schedule summary */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div className="bg-gray-50 p-4 rounded-xl">
+                                  <div className="flex items-center mb-3">
+                                    <CalendarIcon className="w-5 h-5 text-gray-700 mr-2" />
+                                    <h4 className="font-bold">Schedule</h4>
+                                  </div>
+                                  <div className="space-y-2 text-sm text-gray-700">
+                                    <div className="flex justify-between">
+                                      <span>Days:</span>
+                                      <span className="font-medium">{formatDaysOfWeek(bookedPlans[0].daysOfWeek)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Time:</span>
+                                      <span className="font-medium">{bookedPlans[0].timeSlots[0]}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Next service:</span>
+                                      <span className="font-medium">{format(new Date(bookedPlans[0].nextServiceDate), 'EEE, MMM d')}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-gray-50 p-4 rounded-xl">
+                                  <div className="flex items-center mb-3">
+                                    <CheckCircleIcon className="w-5 h-5 text-gray-700 mr-2" />
+                                    <h4 className="font-bold">Includes</h4>
+                                  </div>
+                                  <ul className="text-sm space-y-1">
+                                    {bookedPlans[0].features.slice(0, 3).map((feature, idx) => (
+                                      <motion.li 
+                                        key={idx}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.1 * idx }}
+                                        className="flex items-start"
+                                      >
+                                        <div className="mt-1 mr-2 text-[#c5e82e]">•</div>
+                                        <span className="text-gray-700">{feature}</span>
+                                      </motion.li>
+                                    ))}
+                                    {bookedPlans[0].features.length > 3 && (
+                                      <li className="text-sm text-gray-500">+ {bookedPlans[0].features.length - 3} more</li>
+                                    )}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Next upcoming services */}
+                            <div className="border-t">
+                              <div className="p-6">
+                                <h4 className="font-bold mb-4">Upcoming Services</h4>
+                                <div className="space-y-4">
+                                  {[...Array(3)].map((_, idx) => {
+                                    const date = addDays(new Date(bookedPlans[0].nextServiceDate), idx * 2);
+                                    return (
+                                      <motion.div 
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 + (idx * 0.1) }}
+                                        className="flex items-center justify-between bg-white border rounded-xl p-4 hover:shadow-md transition-shadow"
+                                      >
+                                        <div className="flex items-center">
+                                          <div className="bg-[#c5e82e]/10 p-2 rounded-lg mr-4">
+                                            <DropletIcon className="w-5 h-5 text-[#c5e82e]" />
+                                          </div>
+                                          <div>
+                                            <div className="font-medium">{bookedPlans[0].name.split(' ')[0]} Cleaning Service</div>
+                                            <div className="text-sm text-gray-500">{format(date, 'EEEE, MMMM d')}</div>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <div className="text-sm text-gray-500 mr-4">{bookedPlans[0].timeSlots[0]}</div>
+                                          <Button variant="outline" size="sm" className="rounded-full">
+                                            Reschedule
+                                          </Button>
+                                        </div>
+                                      </motion.div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Action buttons */}
+                            <div className="bg-gray-50 p-6 border-t">
+                              <div className="flex flex-wrap gap-4 justify-end">
+                                <Button variant="outline" className="rounded-full">
+                                  Manage Plan
+                                </Button>
+                                <Button className="rounded-full bg-black text-white hover:bg-gray-800 border-b-2 border-[#c5e82e]">
+                                  Add Special Service
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </AnimatePresence>
+                  ) : (
+                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-md transition-shadow col-span-1">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">Current Plan</CardTitle>
+                          <div className="bg-black p-2 rounded-full">
+                            <svg className="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-xl font-bold">Premium</div>
-                      <p className="text-sm text-gray-500 mt-2">Renews on May 26, 2025</p>
-                      <Button className="w-full mt-4 text-sm bg-black text-white hover:bg-gray-800">
-                        Upgrade Plan
-                      </Button>
-                    </CardContent>
-                  </Card>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-xl font-bold">No Active Plan</div>
+                        <p className="text-sm text-gray-500 mt-2">Subscribe to get started</p>
+                        <Button className="w-full mt-4 text-sm bg-black text-white hover:bg-gray-800">
+                          Choose a Plan
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-                
-                <Card className="overflow-hidden">
-                  <CardHeader className="bg-white border-b">
-                    <CardTitle>Recent Services</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="divide-y">
-                      {[1, 2, 3].map(item => (
-                        <div key={item} className="flex items-center justify-between p-6 hover:bg-gray-50">
-                          <div className="flex items-center">
-                            <div className="w-12 h-12 bg-gray-100 rounded-full mr-4 flex items-center justify-center">
-                              <svg className="w-6 h-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="font-medium">Full Exterior Wash</div>
-                              <div className="text-sm text-gray-500">April {20 + item}, 2025</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full mr-3"></div>
-                            <div>
-                              <div className="font-medium">John Smith</div>
-                              <div className="text-sm text-yellow-500">★ 4.8</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="p-4 bg-gray-50 border-t text-center">
-                      <button className="text-black font-medium hover:underline">
-                        View All Services
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             ) : (
               <div className="text-center py-12">

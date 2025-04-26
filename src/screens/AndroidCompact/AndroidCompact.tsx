@@ -23,7 +23,7 @@ export const AndroidCompact = (): JSX.Element => {
         if (cachedSession) {
           const parsedSession = JSON.parse(cachedSession);
           if (parsedSession && new Date(parsedSession.expires_at * 1000) > new Date()) {
-            navigate('/dashboard');
+            navigate('/services');
             return;
           }
         }
@@ -31,7 +31,7 @@ export const AndroidCompact = (): JSX.Element => {
         // Double-check with Supabase
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          navigate('/dashboard');
+          navigate('/services');
         }
       } catch (error) {
         console.error('Session check error:', error);
@@ -64,7 +64,7 @@ export const AndroidCompact = (): JSX.Element => {
           }));
         }
         
-        navigate('/dashboard');
+        navigate('/services');
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -98,12 +98,8 @@ export const AndroidCompact = (): JSX.Element => {
           <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
               <div className="flex items-center justify-center mb-8">
-                <div className="w-[53px] h-[54px] bg-black rounded-full flex items-center justify-center">
-                  <img
-                    className="w-[39px] h-8"
-                    alt="Logo"
-                    src="/group-46-1.png"
-                  />
+                <div className="w-[53px] h-[54px] bg-black border-2 border-[#c5e82e] rounded-full flex items-center justify-center">
+                  <img className="w-[39px] h-8" alt="Logo" src="/group-46-1.png" />
                 </div>
                 <img
                   className="h-8 ml-4"
@@ -145,7 +141,7 @@ export const AndroidCompact = (): JSX.Element => {
                   />
                 </div>
                 <Button
-                  className="w-full h-12 bg-black text-white rounded-full hover:bg-gray-800"
+                  className="w-full h-12 bg-black hover:bg-gray-800 text-white rounded-full border-2 border-[#c5e82e]"
                   onClick={handleAuth}
                   disabled={loading}
                 >
@@ -165,9 +161,9 @@ export const AndroidCompact = (): JSX.Element => {
                 </div>
 
                 <div className="flex items-center my-8">
-                  <Separator className="flex-1" />
+                  <Separator className="flex-1 bg-gray-200" />
                   <span className="px-4 text-gray-500">Or Sign in using</span>
-                  <Separator className="flex-1" />
+                  <Separator className="flex-1 bg-gray-200" />
                 </div>
 
                 <div className="flex justify-center space-x-4">

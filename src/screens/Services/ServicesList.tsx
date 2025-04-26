@@ -1,21 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { 
   Clock3Icon, 
-  DollarSignIcon, 
   MapPinIcon, 
   ShieldIcon, 
   CheckCircleIcon,
-  StarIcon
+  StarIcon,
+  DropletIcon,
+  SparklesIcon,
+  CarIcon,
+  CalendarIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Badge } from '../../components/ui/badge';
 import { Separator } from "../../components/ui/separator";
-import Header from '../../components/Header'; // Import the Header component
+import Header from '../../components/Header';
 
 // Mock car images based on type
 const carImageMap = {
@@ -26,13 +29,32 @@ const carImageMap = {
 };
 
 // Service images by category
-const categoryImageMap = {
+const categoryImageMap: Record<string, string> = {
+  Monthly: "https://images.unsplash.com/photo-1611129164249-064345060912?q=80&w=800&auto=format&fit=crop",
   Exterior: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?q=80&w=800&auto=format&fit=crop",
   Interior: "https://images.unsplash.com/photo-1520031441872-265e4ff70366?q=80&w=800&auto=format&fit=crop",
-  Protection: "https://images.unsplash.com/photo-1525121577197-98c232f5a81b?q=80&w=800&auto=format&fit=crop",
+  Protection: "https://images.unsplash.com/photo-1617531653332-bd46c24f2068?q=80&w=800&auto=format&fit=crop",
   Eco: "https://images.unsplash.com/photo-1532996122724-e3c864cb1d2a?q=80&w=800&auto=format&fit=crop",
   Express: "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
   default: "https://images.unsplash.com/photo-1605164599901-f8a1482a8c75?q=80&w=800&auto=format&fit=crop"
+};
+
+// Monthly plan-specific images
+const monthlyPlanImageMap: Record<string, string> = {
+  'monthly-basic': "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=800&auto=format&fit=crop",
+'monthly-premium': "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=800&auto=format&fit=crop",
+'monthly-ultimate': "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
+};
+
+// Category icons
+const categoryIcons = {
+  Monthly: <CalendarIcon className="w-4 h-4" />,
+  Exterior: <DropletIcon className="w-4 h-4" />,
+  Interior: <SparklesIcon className="w-4 h-4" />,
+  Protection: <ShieldIcon className="w-4 h-4" />,
+  Eco: <SparklesIcon className="w-4 h-4" />,
+  Express: <Clock3Icon className="w-4 h-4" />,
+  default: <CarIcon className="w-4 h-4" />
 };
 
 interface Service {
@@ -43,6 +65,9 @@ interface Service {
   price: number;
   category: string;
   popular?: boolean;
+  features?: string[];
+  frequency?: string;
+  isMonthlyPlan?: boolean;
 }
 
 interface UserCar {
@@ -71,27 +96,6 @@ const item = {
   show: { y: 0, opacity: 1 }
 };
 
-const dropdownVariants = {
-  hidden: { opacity: 0, y: -10, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    scale: 1,
-    transition: {
-      duration: 0.2,
-      ease: "easeOut"
-    }
-  },
-  exit: { 
-    opacity: 0, 
-    y: -10, 
-    scale: 0.95,
-    transition: {
-      duration: 0.1
-    }
-  }
-};
-
 const ServicesList = () => {
   const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
@@ -100,8 +104,18 @@ const ServicesList = () => {
   const [user, setUser] = useState<any>(null);
   const [userCar, setUserCar] = useState<UserCar | null>(null);
   const [bookingService, setBookingService] = useState<string | null>(null);
-  const [currentCategory, setCurrentCategory] = useState<string>("all");
+  const [currentCategory, setCurrentCategory] = useState<string>("Monthly");
   const [showServiceDetails, setShowServiceDetails] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const checkUserAndCar = async () => {
@@ -158,15 +172,72 @@ const ServicesList = () => {
     // Map car size to a standard type for service matching
     const normalizedType = carType === 'coupe' ? 'sedan' : carType;
     
+    // Monthly plans - available for all car types
+    const monthlyPlans = [
+      {
+        id: 'monthly-basic',
+        name: 'Basic Monthly Plan',
+        description: 'Essential care for your vehicle with regular exterior cleaning',
+        duration: '30 days',
+        price: 3999, // ₹3,999/month
+        category: 'Monthly',
+        frequency: '4 days/week',
+        features: [
+          '4 exterior washes per week',
+          '1 interior cleaning per month',
+          'Flexible time slots',
+          'Daily updates via app'
+        ],
+        isMonthlyPlan: true
+      },
+      {
+        id: 'monthly-premium',
+        name: 'Premium Monthly Plan',
+        description: 'Complete care package with interior and exterior attention',
+        duration: '30 days',
+        price: 5999, // ₹5,999/month
+        category: 'Monthly',
+        popular: true,
+        frequency: '6 days/week',
+        features: [
+          '6 exterior washes per week',
+          '2 interior cleanings per month',
+          'Priority scheduling',
+          'Slot based on your selection',
+          'Daily updates with photos'
+        ],
+        isMonthlyPlan: true
+      },
+      {
+        id: 'monthly-ultimate',
+        name: 'Ultimate Monthly Plan',
+        description: 'The complete package for car enthusiasts who demand perfection',
+        duration: '30 days',
+        price: 8999, // ₹8,999/month
+        category: 'Monthly',
+        frequency: '7 days/week',
+        features: [
+          'Daily exterior washes',
+          'Weekly interior deep cleaning',
+          'Monthly ceramic coating refresh',
+          'Premium time slots',
+          'Dedicated car care specialist',
+          'Detailed maintenance reports'
+        ],
+        isMonthlyPlan: true
+      }
+    ];
+    
     // In a real app, fetch from your database based on car type
     const servicesByType: Record<string, Service[]> = {
       hatchback: [
+        ...monthlyPlans,
         {
           id: 'h1',
           name: 'Compact Exterior Wash',
           description: 'Quick and efficient exterior cleaning tailored for smaller vehicles',
           duration: '30 mins',
-          price: 19.99,
+          price: 799,  // ₹799
           category: 'Exterior'
         },
         {
@@ -174,7 +245,7 @@ const ServicesList = () => {
           name: 'Eco Clean Package',
           description: 'Water-efficient wash perfect for compact cars with eco-friendly products',
           duration: '45 mins',
-          price: 29.99,
+          price: 1299, // ₹1,299
           category: 'Eco',
           popular: true
         },
@@ -183,7 +254,7 @@ const ServicesList = () => {
           name: 'City Car Protection',
           description: 'Special coating to protect against urban pollutants and scratches',
           duration: '60 mins',
-          price: 39.99,
+          price: 1999, // ₹1,999
           category: 'Protection'
         },
         {
@@ -191,7 +262,7 @@ const ServicesList = () => {
           name: 'Small Car Interior Detail',
           description: 'Complete interior clean designed specifically for compact spaces',
           duration: '45 mins',
-          price: 34.99,
+          price: 1499, // ₹1,499
           category: 'Interior'
         },
         {
@@ -199,17 +270,18 @@ const ServicesList = () => {
           name: 'Glass & Trim Treatment',
           description: 'Specialized cleaning for windows and trim elements',
           duration: '25 mins',
-          price: 19.99,
+          price: 899,  // ₹899
           category: 'Exterior'
         }
       ],
       sedan: [
+        ...monthlyPlans,
         {
           id: 's1',
           name: 'Full Sedan Wash',
           description: 'Complete exterior wash designed specifically for sedan bodies',
           duration: '45 mins',
-          price: 24.99,
+          price: 1499, // ₹1,499
           category: 'Exterior',
           popular: true
         },
@@ -218,7 +290,7 @@ const ServicesList = () => {
           name: 'Executive Interior Clean',
           description: 'Premium interior detailing for a professional clean look',
           duration: '60 mins',
-          price: 44.99,
+          price: 2499, // ₹2,499
           category: 'Interior'
         },
         {
@@ -226,7 +298,7 @@ const ServicesList = () => {
           name: 'Commuter Special',
           description: 'Quick wash and vacuum ideal for daily drivers',
           duration: '35 mins',
-          price: 29.99,
+          price: 1299, // ₹1,299
           category: 'Express',
           popular: true
         },
@@ -235,7 +307,7 @@ const ServicesList = () => {
           name: 'Ceramic Coating',
           description: 'Long-lasting protection against environmental damage and UV rays',
           duration: '120 mins',
-          price: 149.99,
+          price: 7999, // ₹7,999
           category: 'Protection'
         },
         {
@@ -243,17 +315,18 @@ const ServicesList = () => {
           name: 'Leather Conditioning',
           description: 'Special treatment for leather seats to restore and protect',
           duration: '40 mins',
-          price: 34.99,
+          price: 1999, // ₹1,999
           category: 'Interior'
         }
       ],
       suv: [
+        ...monthlyPlans,
         {
           id: 'suv1',
           name: 'SUV Deep Clean',
           description: 'Extra attention for larger vehicles with hard-to-reach areas',
           duration: '75 mins',
-          price: 59.99,
+          price: 2999, // ₹2,999
           category: 'Exterior',
           popular: true
         },
@@ -262,7 +335,7 @@ const ServicesList = () => {
           name: 'Family Vehicle Package',
           description: 'Interior sanitization and stain removal perfect for family SUVs',
           duration: '90 mins',
-          price: 69.99,
+          price: 3499, // ₹3,499
           category: 'Interior'
         },
         {
@@ -270,7 +343,7 @@ const ServicesList = () => {
           name: 'Off-Road Recovery',
           description: 'Special cleaning for SUVs after outdoor adventures',
           duration: '120 mins',
-          price: 89.99,
+          price: 4499, // ₹4,499
           category: 'Exterior'
         },
         {
@@ -278,7 +351,7 @@ const ServicesList = () => {
           name: 'Third Row Special',
           description: 'Complete cleaning of all rows including hard-to-reach third row',
           duration: '60 mins',
-          price: 49.99,
+          price: 2499, // ₹2,499
           category: 'Interior'
         },
         {
@@ -286,7 +359,7 @@ const ServicesList = () => {
           name: 'Premium Protection',
           description: 'Full body protection with advanced polymer sealants',
           duration: '100 mins',
-          price: 89.99,
+          price: 4999, // ₹4,999
           category: 'Protection',
           popular: true
         }
@@ -299,17 +372,32 @@ const ServicesList = () => {
     // Add some delay to simulate API fetch
     setTimeout(() => {
       setServices(carServices);
-      setFilteredServices(carServices); // Initialize filtered services with all services
+      setFilteredServices(carServices);
       setLoading(false);
     }, 500);
   };
 
+  const handlePlanSelection = (serviceId: string) => {
+    setBookingService(serviceId);
+    
+    // Navigate to plan selection page with calendar and time slots
+    setTimeout(() => {
+      navigate('/plan-selection', { 
+        state: { 
+          serviceId, 
+          carDetails: userCar 
+        } 
+      });
+    }, 800);
+  };
+
+  // Adding the missing handleBookService function
   const handleBookService = (serviceId: string) => {
     setBookingService(serviceId);
     
-    // Show success message before navigating
+    // Navigate to booking page
     setTimeout(() => {
-      navigate('/booking-confirmation', { 
+      navigate('/booking', { 
         state: { 
           serviceId, 
           carDetails: userCar 
@@ -337,8 +425,15 @@ const ServicesList = () => {
     return carImageMap[car.size] || carImageMap.sedan;
   };
   
-  const getServiceImage = (category: string) => {
+  const getServiceImage = (category: string, serviceId?: string) => {
+    if (serviceId && monthlyPlanImageMap[serviceId]) {
+      return monthlyPlanImageMap[serviceId];
+    }
     return categoryImageMap[category] || categoryImageMap.default;
+  };
+  
+  const getCategoryIcon = (category: string) => {
+    return categoryIcons[category as keyof typeof categoryIcons] || categoryIcons.default;
   };
 
   const toggleServiceDetails = (serviceId: string) => {
@@ -377,279 +472,381 @@ const ServicesList = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-tr from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-black border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-xl font-medium text-gray-700">Loading your personalized services...</div>
+          <div className="relative w-24 h-24 mx-auto mb-5">
+            <div className="absolute inset-0 border-4 border-t-[#c5e82e] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-2 border-4 border-t-transparent border-r-[#c5e82e] border-b-transparent border-l-transparent rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
+          </div>
+          <div className="text-xl font-medium text-white">Preparing your shine...</div>
+          <p className="text-gray-400 mt-2">Loading personalized services for your vehicle</p>
         </div>
       </div>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-tr from-gray-50 to-gray-100"
-    >
-      {/* Use the Header component */}
-      <Header />
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Header component in a fixed position */}
+      <div className={`sticky top-0 z-40 transition-all duration-300 ${
+        scrolled ? "bg-white shadow-md" : "bg-transparent"
+      }`}>
+        <Header />
+      </div>
 
-      {/* Rest of the component stays the same */}
-      {/* Vehicle Banner */}
-      {userCar && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="relative"
-        >
-          <div className="h-[250px] sm:h-[300px] overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/40 z-10"></div>
-            <motion.img 
-              src={getCarImage(userCar)} 
-              alt="Car"
-              className="w-full h-full object-cover object-center"
-              initial={{ scale: 1.1 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 1.5 }}
-            />
-            
-            <div className="absolute inset-0 z-20 flex items-center justify-center">
-              <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center sm:items-start text-center sm:text-left">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-xl"
-                >
-                  <Badge className="mb-2 bg-blue-500 text-white">Your Vehicle</Badge>
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-white">
-                    {userCar.year} {userCar.make} {userCar.model}
-                  </h1>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Badge variant="outline" className="border-white/30 text-white">
-                      {userCar.size.charAt(0).toUpperCase() + userCar.size.slice(1)}
-                    </Badge>
-                    <Badge variant="outline" className="border-white/30 text-white">
-                      {userCar.color.charAt(0).toUpperCase() + userCar.color.slice(1)}
-                    </Badge>
-                    {userCar.plate_number && (
-                      <Badge variant="outline" className="border-white/30 text-white">
-                        {userCar.plate_number}
-                      </Badge>
-                    )}
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Services Section */}
-      <motion.main 
+      {/* Hero Section with Vehicle Banner */}
+      <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+        className="relative"
       >
-        <div className="mb-10">
-          <motion.h2 
-            className="text-3xl font-bold mb-4"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+        <div className="h-[50vh] overflow-hidden relative">
+          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/50 z-10"></div>
+          
+          {/* Background image with parallax effect */}
+          <motion.div
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5 }}
+            className="absolute inset-0"
           >
-            Welcome, {getUserDisplayName()}
-          </motion.h2>
-          <motion.p 
-            className="text-gray-600 max-w-3xl"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            Explore premium services tailored for your {userCar?.size}. Our experts use only high-quality products and techniques to keep your vehicle looking its best.
-          </motion.p>
+            <img 
+              src={getCarImage(userCar)} 
+              alt={`${userCar?.make || 'Car'} ${userCar?.model || 'Model'}`}
+              className="w-full h-full object-cover object-center"
+            />
+          </motion.div>
+          
+          {/* Hero content */}
+          <div className="absolute inset-0 z-20 flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-lg">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Badge className="mb-4 bg-[#c5e82e] text-black font-medium px-3 py-1">Your Vehicle</Badge>
+                <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+                  {userCar?.year || ''} {userCar?.make || ''} <br />
+                  <span className="text-[#c5e82e]">{userCar?.model || ''}</span>
+                </h1>
+                
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
+                    {userCar?.size ? userCar.size.charAt(0).toUpperCase() + userCar.size.slice(1) : 'Vehicle'}
+                  </Badge>
+                  <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
+                    {userCar?.color ? userCar.color.charAt(0).toUpperCase() + userCar.color.slice(1) : 'Color'}
+                  </Badge>
+                  {userCar?.plate_number && (
+                    <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
+                      {userCar.plate_number}
+                    </Badge>
+                  )}
+                </div>
+                
+                <p className="text-gray-200 mb-8 max-w-md">
+                  Premium wash services tailored for your {userCar?.make || 'vehicle'} {userCar?.model || ''}. Select from our curated options below.
+                </p>
+                
+                <motion.div 
+                  className="inline-block"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button className="bg-[#c5e82e] hover:bg-[#d0f53a] text-black text-lg font-medium px-8 py-6 rounded-full">
+                    View Services
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Main Content */}
+      <main className="relative z-10">
+        {/* Curved separator */}
+        <div className="relative -mt-16 z-10">
+          <svg className="fill-white w-full h-32" preserveAspectRatio="none" viewBox="0 0 1440 96">
+            <path d="M0,96L80,80C160,64,320,32,480,32C640,32,800,64,960,69.3C1120,75,1280,53,1360,42.7L1440,32L1440,96L1360,96C1280,96,1120,96,960,96C800,96,640,96,480,96C320,96,160,96,80,96L0,96Z"></path>
+          </svg>
         </div>
 
-        {/* Category Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-          className="mb-10"
-        >
-          <Tabs defaultValue="all" value={currentCategory} onValueChange={setCurrentCategory} className="w-full">
-            <TabsList className="w-full mb-6 bg-white shadow overflow-x-auto flex flex-nowrap p-1 rounded-xl">
-              {getServiceCategories().map(category => (
-                <TabsTrigger 
-                  key={category}
-                  value={category}
-                  className={`flex-1 min-w-[100px] py-3 ${
-                    currentCategory === category 
-                      ? 'bg-black text-white rounded-lg shadow-lg' 
-                      : 'text-gray-600'
-                  }`}
-                >
-                  {category === 'all' ? 'All Services' : category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 -mt-10">
+          {/* Welcome Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mb-12 text-center"
+          >
+            <span className="inline-block mb-2 px-4 py-1 bg-black text-[#c5e82e] rounded-full text-sm font-medium">
+              Monthly Car Care Plans
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Welcome back, {getUserDisplayName()}
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Choose a monthly care plan tailored for your {userCar?.make || 'vehicle'} {userCar?.model || ''}.
+              Regular maintenance with flexible scheduling to keep your vehicle in perfect condition.
+            </p>
+          </motion.div>
 
-            {getServiceCategories().map(category => (
-              <TabsContent key={category} value={category} className="mt-0">
+          {/* Category Filters - Modern Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="mb-12"
+          >
+            <Tabs defaultValue="Monthly" value={currentCategory} onValueChange={setCurrentCategory} className="w-full">
+              <div className="relative flex justify-center mb-10">
+                <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent top-1/2 -z-10"></div>
+                <TabsList className="inline-flex bg-white shadow-lg rounded-full p-1.5 border border-gray-100">
+                  {getServiceCategories().map(category => (
+                    <TabsTrigger 
+                      key={category}
+                      value={category}
+                      className={`px-6 py-2.5 rounded-full transition-all duration-300 min-w-[100px] ${
+                        currentCategory === category ? 'bg-black text-[#c5e82e]' : ''
+                      }`}
+                    >
+                      {category === 'all' ? 'All Services' : (
+                        <div className="flex items-center gap-2">
+                          {getCategoryIcon(category)}
+                          <span>{category}</span>
+                        </div>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+
+              {/* Service Cards Grid - Masonry-style layout */}
+              <TabsContent value={currentCategory} className="mt-0">
                 <AnimatePresence mode="wait">
-                  <motion.div 
-                    key={category}
+                  <motion.div
+                    key={currentCategory}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
+                    variants={container}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
                   >
-                    {/* Service Cards Grid */}
-                    <motion.div 
-                      variants={container}
-                      initial="hidden"
-                      animate="show"
-                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                    >
-                      {filteredServices.map((service) => (
-                        <motion.div 
-                          key={service.id} 
-                          variants={item}
-                          whileHover={{ y: -5 }}
-                          transition={{ type: "spring", stiffness: 300 }}
-                          className="relative"
-                          layoutId={`service-card-${service.id}`}
-                        >
-                          <Card className="overflow-hidden shadow-md hover:shadow-xl transition-all h-full flex flex-col border-0">
+                    {filteredServices.map((service, index) => (
+                      <motion.div
+                        key={service.id}
+                        variants={item}
+                        className={`${index % 3 === 1 ? 'md:mt-12' : ''}`}
+                        whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                      >
+                        <Card className="overflow-hidden border-0 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col group">
+                          {/* Service Card Image Area */}
+                          <div 
+                            className="h-56 relative cursor-pointer overflow-hidden"
+                            onClick={() => toggleServiceDetails(service.id)}
+                          >
+                            <motion.img 
+                              src={getServiceImage(service.category, service.id)}
+                              alt={service.name}
+                              className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                            />
+                            
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-300"></div>
+                            
+                            {/* Price badge */}
+                            <div className="absolute top-4 right-4">
+                              <div className="bg-white text-black font-bold rounded-full py-2 px-4 flex items-center shadow-lg">
+                                {service.isMonthlyPlan ? (
+                                  <span>₹{service.price.toLocaleString('en-IN')}/mo</span>
+                                ) : (
+                                  <span>₹{service.price.toLocaleString('en-IN')}</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Popular badge */}
                             {service.popular && (
-                              <div className="absolute top-4 right-4 z-10">
-                                <Badge 
-                                  variant="warning"
-                                  className="bg-black text-white flex items-center gap-1"
-                                >
-                                  <StarIcon className="w-3 h-3" />
+                              <div className="absolute top-4 left-4">
+                                <Badge className="bg-[#c5e82e] text-black flex items-center gap-1 px-3 py-1.5">
+                                  <StarIcon className="w-3.5 h-3.5" />
                                   Popular
                                 </Badge>
                               </div>
                             )}
-                            <div 
-                              className="h-44 relative cursor-pointer overflow-hidden"
-                              onClick={() => toggleServiceDetails(service.id)}
-                            >
-                              <motion.img 
-                                src={getServiceImage(service.category)}
-                                alt={service.name}
-                                className="w-full h-full object-cover object-center"
-                                whileHover={{ scale: 1.05 }}
-                                transition={{ duration: 0.4 }}
-                              />
-                              {/* Category tag */}
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                                <span className="text-white text-sm font-medium bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
-                                  {service.category}
-                                </span>
-                              </div>
+                            
+                            {/* Category & duration */}
+                            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+                              <Badge className="bg-black/50 backdrop-blur-sm text-white border-none px-3 py-1.5 flex items-center gap-1.5">
+                                {getCategoryIcon(service.category)}
+                                {service.category}
+                              </Badge>
+                              
+                              <Badge variant="outline" className="border-white/40 text-white bg-black/30 backdrop-blur-sm">
+                                <Clock3Icon className="w-3.5 h-3.5 mr-1" />
+                                {service.duration}
+                              </Badge>
                             </div>
-                            <CardContent className="p-6 flex flex-col flex-grow">
-                              <div className="mb-4">
-                                <h3 className="text-xl font-bold mb-2 flex items-center justify-between">
-                                  {service.name}
-                                  <motion.button
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => toggleServiceDetails(service.id)}
-                                    className="text-sm text-blue-500 font-normal"
-                                  >
-                                    Details
-                                  </motion.button>
-                                </h3>
-                                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                                  {service.description}
-                                </p>
+                          </div>
+                          
+                          {/* Service Card Content */}
+                          <CardContent className="p-6 flex flex-col flex-grow relative">
+                            <h3 className="text-xl font-bold mb-3 group-hover:text-[#c5e82e] transition-colors duration-300">
+                              {service.name}
+                            </h3>
+                            
+                            {service.isMonthlyPlan && service.frequency && (
+                              <Badge variant="outline" className="mb-3 inline-flex w-fit">
+                                <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
+                                {service.frequency}
+                              </Badge>
+                            )}
+                            
+                            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                              {service.description}
+                            </p>
+                            
+                            {/* Display features for monthly plans */}
+                            {service.isMonthlyPlan && service.features && (
+                              <div className="mb-6 flex-grow">
+                                <ul className="space-y-2">
+                                  {service.features.slice(0, 2).map((feature, idx) => (
+                                    <li key={idx} className="flex items-start text-xs text-gray-600">
+                                      <CheckCircleIcon className="h-3.5 w-3.5 text-[#c5e82e] mr-1.5 mt-0.5" />
+                                      <span>{feature}</span>
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
+                            )}
+                            
+                            <div className="mt-auto flex justify-between items-center">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => toggleServiceDetails(service.id)}
+                                className="text-sm border-gray-300 hover:bg-gray-50 hover:text-black"
+                              >
+                                View Details
+                              </Button>
                               
-                              <div className="flex flex-wrap items-center gap-4 mb-5 text-sm text-gray-600">
-                                <div className="flex items-center">
-                                  <Clock3Icon className="w-4 h-4 mr-1 text-gray-500" />
-                                  {service.duration}
-                                </div>
-                                <div className="flex items-center">
-                                  <DollarSignIcon className="w-4 h-4 mr-1 text-gray-500" />
-                                  ${service.price}
-                                </div>
-                              </div>
-                              
-                              <div className="mt-auto">
-                                <motion.div
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
+                              <motion.div
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <Button 
+                                  onClick={() => service.isMonthlyPlan ? handlePlanSelection(service.id) : handleBookService(service.id)}
+                                  className="bg-black hover:bg-gray-900 text-white rounded-full px-6"
+                                  style={{
+                                    boxShadow: bookingService === service.id ? '0 0 0 2px #c5e82e' : 'none',
+                                    borderBottom: '3px solid #c5e82e'
+                                  }}
                                 >
-                                  <Button 
-                                    className={`w-full bg-black text-white hover:bg-gray-800 py-6 ${
-                                      bookingService === service.id ? 'bg-green-600 hover:bg-green-700' : ''
-                                    }`}
-                                    onClick={() => handleBookService(service.id)}
-                                    disabled={bookingService === service.id}
-                                  >
-                                    {bookingService === service.id ? (
-                                      <span className="flex items-center">
-                                        <CheckCircleIcon className="mr-2 h-5 w-5 animate-pulse" />
-                                        Booking...
-                                      </span>
-                                    ) : (
-                                      'Book Now'
-                                    )}
-                                  </Button>
-                                </motion.div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      ))}
-                    </motion.div>
+                                  {bookingService === service.id ? 'Processing...' : (service.isMonthlyPlan ? 'Select Plan' : 'Book')}
+                                </Button>
+                              </motion.div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
                   </motion.div>
                 </AnimatePresence>
               </TabsContent>
-            ))}
-          </Tabs>
-        </motion.div>
-        
-        {/* Quality Promise Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 }}
-          className="mt-20 bg-white rounded-2xl shadow-lg p-8"
-        >
-          <h3 className="text-2xl font-bold mb-6 text-center">Our Quality Promise</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-black/5 p-4 rounded-full mb-4">
-                <ShieldIcon className="h-8 w-8 text-black" />
-              </div>
-              <h4 className="font-bold text-lg mb-2">Premium Products</h4>
-              <p className="text-gray-600 text-sm">We use only high-quality, eco-friendly products that are safe for your vehicle and the environment.</p>
+            </Tabs>
+          </motion.div>
+          
+          {/* Accent Divider */}
+          <div className="relative flex items-center py-12 my-12">
+            <div className="flex-grow h-0.5 bg-gray-200"></div>
+            <div className="flex-shrink-0 px-3">
+              <span className="bg-[#c5e82e] w-6 h-6 rounded-full block"></span>
             </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-black/5 p-4 rounded-full mb-4">
-                <Clock3Icon className="h-8 w-8 text-black" />
-              </div>
-              <h4 className="font-bold text-lg mb-2">Efficient Service</h4>
-              <p className="text-gray-600 text-sm">Our trained professionals work efficiently to deliver exceptional results without wasting your time.</p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-black/5 p-4 rounded-full mb-4">
-                <MapPinIcon className="h-8 w-8 text-black" />
-              </div>
-              <h4 className="font-bold text-lg mb-2">Convenient Locations</h4>
-              <p className="text-gray-600 text-sm">Multiple service locations near you with professional equipment and comfortable waiting areas.</p>
-            </div>
+            <div className="flex-grow h-0.5 bg-gray-200"></div>
           </div>
-        </motion.div>
-      </motion.main>
+          
+          {/* Quality Promise Section - Reimagined */}
+          <motion.section
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+            className="relative rounded-3xl overflow-hidden"
+          >
+            {/* Background with blur effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-black to-gray-900 rounded-3xl overflow-hidden">
+              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=2000')] bg-cover bg-center opacity-20"></div>
+              <div className="absolute inset-0 backdrop-blur-sm"></div>
+            </div>
+            
+            {/* Content */}
+            <div className="relative z-10 px-6 py-16 md:py-20 text-white">
+              <div className="max-w-5xl mx-auto text-center mb-12">
+                <Badge className="mb-4 bg-white/10 backdrop-blur-md text-white border-none px-4 py-1.5">
+                  Our Promise
+                </Badge>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Experience the <span className="text-[#c5e82e]">Wiper Difference</span>
+                </h2>
+                <p className="text-gray-300 max-w-2xl mx-auto">
+                  We don't just clean cars - we restore their shine and protect their finish.
+                  Every service comes with our quality guarantee and attention to detail.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                {[
+                  {
+                    icon: <ShieldIcon className="h-8 w-8" />,
+                    title: "Premium Products",
+                    description: "We use only high-quality, eco-friendly products that are safe for your vehicle and the environment."
+                  },
+                  {
+                    icon: <Clock3Icon className="h-8 w-8" />,
+                    title: "Efficient Service",
+                    description: "Our trained professionals work efficiently to deliver exceptional results without wasting your time."
+                  },
+                  {
+                    icon: <MapPinIcon className="h-8 w-8" />,
+                    title: "Convenient Locations",
+                    description: "Multiple service locations near you with professional equipment and comfortable waiting areas."
+                  }
+                ].map((item, i) => (
+                  <motion.div 
+                    key={i} 
+                    className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10"
+                    whileHover={{ y: -5, boxShadow: '0 15px 30px rgba(0,0,0,0.2)' }}
+                  >
+                    <div className="bg-[#c5e82e] p-3 rounded-xl inline-flex mb-4 text-black">
+                      {item.icon}
+                    </div>
+                    <h3 className="font-bold text-xl mb-3">{item.title}</h3>
+                    <p className="text-gray-300 text-sm">{item.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+          
+          {/* Final CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1 }}
+            className="mt-20 text-center"
+          >
+            <h3 className="text-2xl font-bold mb-4">Ready for regular shine?</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Select a monthly plan and enjoy premium car care on your schedule
+            </p>
+            <Button className="bg-black hover:bg-gray-800 text-white text-lg px-8 py-6 rounded-full border-b-4 border-[#c5e82e]">
+              View Monthly Plans
+            </Button>
+          </motion.div>
+        </div>
+      </main>
 
       {/* Service Details Modal */}
       <AnimatePresence>
@@ -658,96 +855,130 @@ const ServicesList = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setShowServiceDetails(null)}
           >
             <motion.div
-              layoutId={`service-card-${showServiceDetails}`}
-              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-              initial={{ y: 50 }}
-              animate={{ y: 0 }}
-              exit={{ y: 50 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: "spring", damping: 25 }}
             >
               {services.filter(s => s.id === showServiceDetails).map(service => (
                 <div key={service.id} className="p-0">
-                  <div className="h-56 relative">
+                  <div className="h-64 relative">
                     <img 
-                      src={getServiceImage(service.category)}
+                      src={getServiceImage(service.category, service.id)}
                       alt={service.name}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent flex items-end">
-                      <div className="p-6 text-white">
-                        <Badge className="mb-2 bg-white text-black">
+                      <div className="p-8 text-white">
+                        <Badge className="mb-3 bg-[#c5e82e] text-black px-3 py-1">
                           {service.category}
                         </Badge>
-                        <h2 className="text-2xl font-bold mb-1">{service.name}</h2>
+                        <h2 className="text-3xl font-bold">{service.name}</h2>
                       </div>
                     </div>
                     <button 
-                      className="absolute top-4 right-4 bg-white/20 backdrop-blur-md text-white rounded-full p-2 hover:bg-white/30"
+                      className="absolute top-4 right-4 bg-white/10 backdrop-blur-md text-white rounded-full p-2 hover:bg-white/30"
                       onClick={() => setShowServiceDetails(null)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                   </div>
 
-                  <div className="p-6">
-                    <div className="flex justify-between items-center mb-6">
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center">
-                          <Clock3Icon className="w-5 h-5 mr-1 text-gray-500" />
-                          {service.duration}
-                        </div>
-                        <div className="text-xl font-bold">
-                          ${service.price}
+                  <div className="p-8">
+                    <div className="flex flex-wrap justify-between items-center mb-8 gap-3">
+                      <div className="flex items-center gap-4 text-lg">
+                        <div className="flex items-center text-black font-bold text-3xl">
+                          {service.isMonthlyPlan ? (
+                            <span>₹{service.price.toLocaleString('en-IN')}<span className="text-base font-medium text-gray-500">/month</span></span>
+                          ) : (
+                            <span>₹{service.price.toLocaleString('en-IN')}</span>
+                          )}
                         </div>
                       </div>
-                      {service.popular && (
-                        <Badge className="bg-yellow-500 text-white flex items-center gap-1">
-                          <StarIcon className="w-3 h-3" />
-                          Popular Choice
+                      
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-gray-100 text-gray-700 flex items-center gap-1.5 px-3 py-1.5">
+                          <Clock3Icon className="w-3.5 h-3.5" />
+                          {service.duration}
                         </Badge>
-                      )}
+                        
+                        {service.frequency && (
+                          <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1.5 px-3 py-1.5">
+                            <CalendarIcon className="w-3.5 h-3.5" />
+                            {service.frequency}
+                          </Badge>
+                        )}
+                        
+                        {service.popular && (
+                          <Badge className="bg-yellow-100 text-yellow-800 flex items-center gap-1.5 px-3 py-1.5">
+                            <StarIcon className="w-3.5 h-3.5" />
+                            Popular
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="mb-6">
-                      <h3 className="text-lg font-bold mb-2">Description</h3>
-                      <p className="text-gray-600">
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-3">Description</h3>
+                      <p className="text-gray-600 leading-relaxed">
                         {service.description}
                       </p>
                     </div>
 
-                    <Separator className="my-6" />
+                    <Separator className="my-8" />
 
-                    <div className="mb-6">
-                      <h3 className="text-lg font-bold mb-3">What's Included</h3>
-                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {[
+                    <div className="mb-8">
+                      <h3 className="text-lg font-bold mb-4">
+                        {service.isMonthlyPlan ? "Plan Includes" : "What's Included"}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(service.features || [
                           "Complete exterior wash",
                           "Hand-dried finish",
                           "Wheel cleaning",
                           "Tire dressing",
                           "Window cleaning"
-                        ].map((item, i) => (
-                          <li key={i} className="flex items-center text-gray-700">
-                            <CheckCircleIcon className="h-5 w-5 mr-2 text-green-500" />
-                            {item}
-                          </li>
+                        ]).map((item, i) => (
+                          <div key={i} className="flex items-start">
+                            <div className="mt-0.5 mr-3 bg-[#c5e82e] p-1 rounded-full">
+                              <CheckCircleIcon className="h-4 w-4 text-black" />
+                            </div>
+                            <span className="text-gray-700">{item}</span>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
 
-                    <Button
-                      className="w-full bg-black text-white hover:bg-gray-800 py-6 mt-4"
-                      onClick={() => {
-                        handleBookService(service.id);
-                        setShowServiceDetails(null);
-                      }}
-                    >
-                      Book This Service
-                    </Button>
+                    {service.isMonthlyPlan && (
+                      <div className="mb-8 bg-gray-50 p-4 rounded-xl">
+                        <h3 className="text-lg font-bold mb-3">How It Works</h3>
+                        <ol className="space-y-3 list-decimal pl-5 text-gray-700">
+                          <li>Select your preferred plan</li>
+                          <li>Choose your preferred time slots on the calendar</li>
+                          <li>Our team will arrive at the scheduled times</li>
+                          <li>Receive updates and manage your bookings through the app</li>
+                          <li>Pay monthly for hassle-free service</li>
+                        </ol>
+                      </div>
+                    )}
+
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        className="w-full bg-black text-white hover:bg-gray-800 py-6 rounded-xl text-lg border-b-4 border-[#c5e82e]"
+                        onClick={() => {
+                          service.isMonthlyPlan ? handlePlanSelection(service.id) : handleBookService(service.id);
+                          setShowServiceDetails(null);
+                        }}
+                      >
+                        {service.isMonthlyPlan ? 'Select This Plan' : 'Book This Service'}
+                      </Button>
+                    </motion.div>
                   </div>
                 </div>
               ))}
@@ -755,7 +986,7 @@ const ServicesList = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
 

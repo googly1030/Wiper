@@ -7,7 +7,9 @@ import { AddCar } from "./screens/AddCar/AddCar";
 import { EmailConfirmation } from "./screens/EmailConfirmation/EmailConfirmation";
 import ServicesList from "./screens/Services/ServicesList";
 import { AuthGuard } from "./components/AuthGuard"; 
-import { LoginGuard } from "./components/LoginGuard"; // Add this import
+import { LoginGuard } from "./components/LoginGuard"; 
+import  PlanSelection  from "./screens/PlanSelection/PlanSelection";
+import { Profile } from "./screens/Profile/Profile";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -31,6 +33,12 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           </AuthGuard>
         } />
         <Route path="/services" element={<ServicesList />} />
+        <Route path="/plan-selection" element={<PlanSelection />} />
+        <Route path="/profile" element={
+          <AuthGuard>
+            <Profile />
+          </AuthGuard>
+        } />
       </Routes>
     </Router>
   </StrictMode>
