@@ -36,10 +36,8 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
       const userHasCar = cars && cars.length > 0;
       console.log(userHasCar ? `✅ User has cars: ${cars.length} found` : '❌ No cars found for user');
       
-      // Log the actual car data for debugging
-      if (cars && cars.length > 0) {
-        console.log('🚙 Car data:', cars[0]);
-      }
+      // Store car status in localStorage for faster loading on subsequent visits
+      localStorage.setItem('userHasCar', JSON.stringify(userHasCar));
       
       return userHasCar;
     } catch (err) {
@@ -52,16 +50,30 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     const checkAuth = async () => {
       try {
         console.log('🔒 Checking authentication status...');
+        
+        // Check with Supabase first for the most reliable auth status
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          console.log('❌ No session found, user is not authenticated');
+          console.log('❌ No valid session found, user is not authenticated');
+          // Make sure to clean up any stale session data
+          localStorage.removeItem('userSession');
+          localStorage.removeItem('userHasCar');
           setAuthenticated(false);
           setLoading(false);
           return;
         }
 
         console.log('✅ User authenticated:', session.user.id);
+        // Store session data in localStorage for faster subsequent loads
+        localStorage.setItem('userSession', JSON.stringify({
+          expires_at: session.expires_at,
+          user: {
+            id: session.user.id,
+            email: session.user.email
+          }
+        }));
+
         setUserId(session.user.id);
         setAuthenticated(true);
         
@@ -70,6 +82,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
         setHasCar(userHasCar);
       } catch (error) {
         console.error('❌ Auth check error:', error);
+        setAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -78,10 +91,8 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     checkAuth();
   }, [location.key]); // Re-check auth & cars when location changes
 
-  // Add an additional check when we're on the add-car page
+  // Same as before...
   useEffect(() => {
-    // If we're coming from the add-car page and already checked auth, 
-    // let's force a re-check for cars
     if (authenticated && userId && location.pathname === '/dashboard') {
       const recheckCars = async () => {
         console.log('🔄 Rechecking cars after possible add-car completion');
@@ -118,7 +129,6 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  // If user is authenticated but has no car and isn't already on the add-car page
   if (authenticated && !hasCar && location.pathname !== '/add-car') {
     console.log('🔄 Redirecting to add-car page');
     return <Navigate to="/add-car" replace />;

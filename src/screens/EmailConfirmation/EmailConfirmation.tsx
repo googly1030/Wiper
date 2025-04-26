@@ -24,8 +24,19 @@ export const EmailConfirmation = () => {
         // If hash params include access_token, it's a successful confirmation
         if (params.get('access_token')) {
           // The supabase client will automatically handle the session
-          const { error } = await supabase.auth.getSession();
+          const { data, error } = await supabase.auth.getSession();
           if (error) throw error;
+          
+          // Store session in localStorage
+          if (data.session) {
+            localStorage.setItem('userSession', JSON.stringify({
+              expires_at: data.session.expires_at,
+              user: {
+                id: data.session.user.id,
+                email: data.session.user.email
+              }
+            }));
+          }
           
           // Navigate to dashboard after a short delay to allow session to be processed
           setTimeout(() => navigate('/dashboard'), 1500);

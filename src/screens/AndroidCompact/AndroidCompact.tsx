@@ -1,5 +1,5 @@
 import { ArrowLeftIcon } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
@@ -15,17 +15,55 @@ export const AndroidCompact = (): JSX.Element => {
   const [isLogin, setIsLogin] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
+  useEffect(() => {
+    const checkForExistingSession = async () => {
+      try {
+        // Check for cached session in localStorage
+        const cachedSession = localStorage.getItem('userSession');
+        if (cachedSession) {
+          const parsedSession = JSON.parse(cachedSession);
+          if (parsedSession && new Date(parsedSession.expires_at * 1000) > new Date()) {
+            navigate('/dashboard');
+            return;
+          }
+        }
+        
+        // Double-check with Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      }
+    };
+    
+    checkForExistingSession();
+  }, [navigate]);
+
   const handleAuth = async () => {
     try {
       setLoading(true);
       setErrorMessage("");
       
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        
+        // Store session info in localStorage for quick access
+        if (data.session) {
+          localStorage.setItem('userSession', JSON.stringify({
+            expires_at: data.session.expires_at,
+            user: {
+              id: data.session.user.id,
+              email: data.session.user.email
+            }
+          }));
+        }
+        
         navigate('/dashboard');
       } else {
         const { error } = await supabase.auth.signUp({

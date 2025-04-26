@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, clearAuthStorage } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Separator } from '../../components/ui/separator';
 import { CalendarIcon, CarIcon, ClockIcon, PlusIcon, WrenchIcon } from 'lucide-react';
+import Header from '../../components/Header';
 import { motion } from 'framer-motion';
 
 interface Wiper {
@@ -17,10 +18,10 @@ interface Wiper {
 }
 
 interface User {
-  email: string;
+  email?: string;
   user_metadata?: {
     name?: string;
-  }
+  };
 }
 
 interface UserCar {
@@ -48,7 +49,6 @@ export const Dashboard = () => {
   const [hasSubscription, setHasSubscription] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [showCarForm, setShowCarForm] = useState(false);
   const [recommendedServices, setRecommendedServices] = useState<any[]>([]);
 
   // Placeholder plans - replace with actual plans from your database
@@ -92,7 +92,10 @@ export const Dashboard = () => {
     }
     
     // Set user data
-    setUser(session.user);
+    setUser({
+      email: session.user.email || '',
+      user_metadata: session.user.user_metadata,
+    });
     
     // Check if user has a subscription (this would be from your actual database)
     // For demo purposes, we'll just simulate a subscription check
@@ -133,8 +136,23 @@ export const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    try {
+      console.log('🔄 Signing out user...');
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Clear any local storage items related to auth
+      clearAuthStorage();
+      
+      // Navigate to home
+      console.log('✅ User signed out successfully, redirecting to login');
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('❌ Error signing out:', error);
+      // Force sign out by clearing storage even if there was an error
+      clearAuthStorage();
+      navigate('/');
+    }
   };
 
   const getUserName = () => {
@@ -275,38 +293,7 @@ export const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="w-[40px] h-[40px] bg-black rounded-full flex items-center justify-center">
-                <img
-                  className="w-[30px] h-6"
-                  alt="Logo"
-                  src="/group-46-1.png"
-                />
-              </div>
-              <img
-                className="h-6 ml-3"
-                alt="Brand"
-                src="/group-47.png"
-              />
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-gray-600 hidden md:block">
-                {user?.email}
-              </span>
-              <Button
-                variant="ghost"
-                onClick={handleSignOut}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Welcome Banner */}
       <div className="bg-black text-white">
