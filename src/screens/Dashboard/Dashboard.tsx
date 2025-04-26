@@ -1,34 +1,39 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, clearAuthStorage } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge'; // Add Badge component import
+import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
+import { Input } from '../../components/ui/input';
 import { 
   CarIcon, 
   PlusIcon, 
   WrenchIcon,
-  Calendar, 
-  ChevronRightIcon, 
   DropletIcon, 
   CheckCircleIcon, 
   ShieldCheckIcon,
   ClockIcon,
-  CalendarIcon
+  CalendarIcon,
+  UserIcon,
+  HomeIcon,
+  BadgeIcon,
+  TrendingUpIcon,
+  SparklesIcon,
+  SearchIcon,
+  StarIcon,
+  CheckIcon,
+  HelpCircleIcon as QuestionMarkCircleIcon,
+  CameraIcon,
+  HistoryIcon,
+  Trash2Icon,
+  Pencil,
+  Wrench as ToolIcon,
+  ClipboardCheck as ClipboardIcon
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { format, addDays } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-
-interface Wiper {
-  id: string;
-  name: string;
-  experience: string;
-  rating: number;
-  price_per_wash: number;
-  available: boolean;
-}
+import { motion } from 'framer-motion';
 
 interface User {
   email?: string;
@@ -52,6 +57,11 @@ interface Plan {
   name: string;
   price: number;
   features: string[];
+  description?: string;
+  category?: string;
+  frequency?: string;
+  popular?: boolean;
+  isMonthlyPlan?: boolean;
 }
 
 interface BookedPlan {
@@ -74,7 +84,6 @@ const formatDaysOfWeek = (days: number[]) => {
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const [wipers, setWipers] = useState<Wiper[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [userCar, setUserCar] = useState<UserCar | null>(null);
   const [hasSubscription, setHasSubscription] = useState<boolean>(false);
@@ -83,31 +92,61 @@ export const Dashboard = () => {
   const [recommendedServices, setRecommendedServices] = useState<any[]>([]);
   const [bookedPlans, setBookedPlans] = useState<BookedPlan[]>([]);
 
-  // Placeholder plans - replace with actual plans from your database
+  // Update the Plan interface to include more fields
   const plans: Plan[] = [
     {
-      id: '1',
-      name: 'Basic',
-      price: 99.99,
-      features: ['1 car wash per week', 'Basic exterior cleaning', 'Window cleaning']
+      id: 'monthly-basic',
+      name: 'Basic Monthly Plan',
+      price: 3999,
+      description: 'Essential care for your vehicle with regular exterior cleaning',
+      category: 'Monthly',
+      frequency: '4 days/week',
+      features: [
+        '4 exterior washes per week',
+        '1 interior cleaning per month',
+        'Flexible time slots',
+        'Daily updates via app'
+      ],
+      isMonthlyPlan: true
     },
     {
-      id: '2',
-      name: 'Premium',
-      price: 149.99,
-      features: ['2 car washes per week', 'Interior & exterior cleaning', 'Window cleaning', 'Tire shine']
+      id: 'monthly-premium',
+      name: 'Premium Monthly Plan',
+      price: 5999,
+      description: 'Complete care package with interior and exterior attention',
+      category: 'Monthly',
+      popular: true,
+      frequency: '6 days/week',
+      features: [
+        '6 exterior washes per week',
+        '2 interior cleanings per month',
+        'Priority scheduling',
+        'Slot based on your selection',
+        'Daily updates with photos'
+      ],
+      isMonthlyPlan: true
     },
     {
-      id: '3',
-      name: 'Ultimate',
-      price: 199.99,
-      features: ['Unlimited car washes', 'Full detailing service', 'Interior vacuum cleaning', 'Waxing', 'Tire shine', 'Priority booking']
+      id: 'monthly-ultimate',
+      name: 'Ultimate Monthly Plan',
+      price: 8999,
+      description: 'The complete package for car enthusiasts who demand perfection',
+      category: 'Monthly',
+      frequency: '7 days/week',
+      features: [
+        'Daily exterior washes',
+        'Weekly interior deep cleaning',
+        'Monthly ceramic coating refresh',
+        'Premium time slots',
+        'Dedicated car care specialist',
+        'Detailed maintenance reports'
+      ],
+      isMonthlyPlan: true
     }
   ];
 
   useEffect(() => {
     checkUser();
-    fetchWipers();
   }, []);
 
   useEffect(() => {
@@ -215,39 +254,6 @@ export const Dashboard = () => {
     }
     
     setLoading(false);
-  };
-
-  const fetchWipers = async () => {
-    const { data, error } = await supabase
-      .from('wipers')
-      .select('*')
-      .order('rating', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching wipers:', error);
-    } else {
-      setWipers(data || []);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      console.log('🔄 Signing out user...');
-      // Sign out from Supabase
-      await supabase.auth.signOut();
-      
-      // Clear any local storage items related to auth
-      clearAuthStorage();
-      
-      // Navigate to home
-      console.log('✅ User signed out successfully, redirecting to login');
-      navigate('/', { replace: true });
-    } catch (error) {
-      console.error('❌ Error signing out:', error);
-      // Force sign out by clearing storage even if there was an error
-      clearAuthStorage();
-      navigate('/');
-    }
   };
 
   const getUserName = () => {
@@ -431,36 +437,37 @@ export const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex space-x-6 border-b overflow-x-auto scrollbar-hide">
           <button 
-            className={`pb-4 px-2 font-medium whitespace-nowrap ${activeTab === 'dashboard' 
-              ? 'text-black border-b-2 border-black' 
-              : 'text-gray-500 hover:text-gray-800'}`}
+            className={`pb-4 px-2 font-medium whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'dashboard' 
+                ? 'text-black border-b-2 border-[#c5e82e]' 
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
             onClick={() => setActiveTab('dashboard')}
           >
+            <HomeIcon className="w-4 h-4" />
             Dashboard
           </button>
           <button 
-            className={`pb-4 px-2 font-medium whitespace-nowrap ${activeTab === 'wipers' 
-              ? 'text-black border-b-2 border-black' 
-              : 'text-gray-500 hover:text-gray-800'}`}
-            onClick={() => setActiveTab('wipers')}
-          >
-            Car Wipers
-          </button>
-          <button 
-            className={`pb-4 px-2 font-medium whitespace-nowrap ${activeTab === 'plans' 
-              ? 'text-black border-b-2 border-black' 
-              : 'text-gray-500 hover:text-gray-800'}`}
+            className={`pb-4 px-2 font-medium whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'plans' 
+                ? 'text-black border-b-2 border-[#c5e82e]' 
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
             onClick={() => setActiveTab('plans')}
           >
+            <ClipboardIcon className="w-4 h-4" />
             Subscription Plans
           </button>
           <button 
-            className={`pb-4 px-2 font-medium whitespace-nowrap ${activeTab === 'car' 
-              ? 'text-black border-b-2 border-black' 
-              : 'text-gray-500 hover:text-gray-800'}`}
+            className={`pb-4 px-2 font-medium whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'car' 
+                ? 'text-black border-b-2 border-[#c5e82e]' 
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
             onClick={() => setActiveTab('car')}
           >
-            My Car
+            <CarIcon className="w-4 h-4" />
+            My Vehicles
           </button>
         </div>
       </div>
@@ -470,40 +477,19 @@ export const Dashboard = () => {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div>
-            {hasSubscription ? (
-              <div className="space-y-6">
-                {/* Personalized recommendation based on car type */}
-                {userCar && (
-                  <Card className="border-l-4 border-l-blue-500">
-                    <CardContent className="p-6">
-                      <div className="flex items-start">
-                        <div className="flex-shrink-0 bg-blue-100 p-2 rounded-lg">
-                          <WrenchIcon className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="font-medium text-lg">Recommended for your {userCar.make} {userCar.model}</h3>
-                          <p className="text-gray-600 mt-1">
-                            {userCar.size === 'suv' ? 
-                              'SUVs need special attention for their larger surfaces. We recommend our Premium package that includes interior detailing.' :
-                              'Based on your car model, we recommend a full exterior wash with waxing protection every two weeks.'}
-                          </p>
-                          <Button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white">
-                            Schedule Recommended Service
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
+            {userCar ? (
+              <div className="space-y-8">
+                {/* Quick stats overview */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-md transition-shadow">
-                    <CardHeader>
+                  {/* Next service card */}
+                  <Card className="bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-md transition-shadow border-0 overflow-hidden">
+                    <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Next Service</CardTitle>
-                        <div className="bg-white border border-gray-200 p-2 rounded-full">
-                          <CalendarIcon className="w-5 h-5 text-gray-700" />
-                        </div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <CalendarIcon className="w-5 h-5 text-[#c5e82e]" />
+                          Next Service
+                        </CardTitle>
+                        <Badge className="bg-[#c5e82e] text-black">Tomorrow</Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -512,10 +498,10 @@ export const Dashboard = () => {
                           <ClockIcon className="w-4 h-4 text-[#c5e82e] mr-2" />
                           <span className="text-sm font-medium">{bookedPlans.length > 0 ? bookedPlans[0].timeSlots[0] : "9:00 AM - 10:00 AM"}</span>
                         </div>
-                        <div className="text-2xl font-bold mt-1">Tomorrow</div>
+                        <div className="text-2xl font-bold mt-1">{format(addDays(new Date(), 1), 'EEE, MMM d')}</div>
                         <div className="text-sm text-gray-600 mt-1 flex items-center">
                           <ShieldCheckIcon className="w-3.5 h-3.5 mr-1.5" />
-                          Exterior + Interior Cleaning
+                          {bookedPlans.length > 0 ? 'Premium Cleaning Service' : 'Exterior + Interior Cleaning'}
                         </div>
                       </div>
                       
@@ -530,422 +516,589 @@ export const Dashboard = () => {
                     </CardContent>
                   </Card>
                   
-                  <Card className="bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-md transition-shadow">
-                    <CardHeader>
+                  {/* Services usage card */}
+                  <Card className="bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-md transition-shadow border-0 overflow-hidden">
+                    <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Services Used</CardTitle>
-                        <div className="bg-white p-2 rounded-full">
-                          <ClockIcon className="w-5 h-5 text-gray-700" />
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <DropletIcon className="w-5 h-5 text-[#c5e82e]" />
+                          Services Used
+                        </CardTitle>
+                        <div className="bg-white p-2 rounded-full border border-gray-100">
+                          <CheckCircleIcon className="w-4 h-4 text-[#c5e82e]" />
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-3xl font-bold">3</div>
-                      <p className="text-sm text-gray-500 mt-2">This month</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
-                        <div className="bg-black h-2 rounded-full" style={{ width: '60%' }}></div>
+                      <div className="flex items-end gap-2">
+                        <div className="text-3xl font-bold">{bookedPlans.length > 0 ? bookedPlans[0].completedServices : 3}</div>
+                        <p className="text-sm text-gray-500 mb-1">of {bookedPlans.length > 0 ? bookedPlans[0].totalServices : 8} this month</p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">5 remaining this month</p>
+                      
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+                        <motion.div 
+                          className="bg-[#c5e82e] h-2 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: bookedPlans.length > 0 ? `${(bookedPlans[0].completedServices / bookedPlans[0].totalServices) * 100}%` : '60%' }}
+                          transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2 flex items-center">
+                        <TrendingUpIcon className="w-3 h-3 mr-1 text-[#c5e82e]" />
+                        {bookedPlans.length > 0 ? (bookedPlans[0].totalServices - bookedPlans[0].completedServices) : 5} remaining this month
+                      </p>
                     </CardContent>
                   </Card>
                   
+                  {/* Current plan or CTA card */}
                   {bookedPlans.length > 0 ? (
-                    <AnimatePresence>
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="col-span-3"
-                      >
-                        <Card className="overflow-hidden border-0 shadow-lg">
-                          <div className="bg-gradient-to-r from-gray-900 to-black p-6">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <h3 className="text-xl font-bold text-white">Your Active Plan</h3>
-                                <p className="text-[#c5e82e] mt-1">
-                                  Next service tomorrow
-                                </p>
-                              </div>
-                              <Badge className="bg-[#c5e82e] text-black px-3 py-1">
-                                Active
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <CardContent className="p-0">
-                            {/* Plan details section */}
-                            <div className="p-6">
-                              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-                                <div>
-                                  <h3 className="text-2xl font-bold">{bookedPlans[0].name}</h3>
-                                  <p className="text-gray-500 mt-1">Started on {format(new Date(bookedPlans[0].startDate), 'MMM dd, yyyy')}</p>
-                                </div>
-                                <div className="mt-4 md:mt-0">
-                                  <div className="text-2xl font-bold">₹{bookedPlans[0].price.toLocaleString('en-IN')}</div>
-                                  <p className="text-gray-500 text-sm text-right">per month</p>
-                                </div>
-                              </div>
-
-                              {/* Progress bar */}
-                              <div className="mb-6">
-                                <div className="flex justify-between items-center mb-2">
-                                  <span className="font-medium">Monthly Progress</span>
-                                  <span className="text-sm text-gray-600">
-                                    {bookedPlans[0].completedServices} of {bookedPlans[0].totalServices} services
-                                  </span>
-                                </div>
-                                <div className="w-full bg-gray-100 rounded-full h-3">
-                                  <motion.div 
-                                    className="bg-[#c5e82e] h-3 rounded-full"
-                                    initial={{ width: 0 }}
-                                    animate={{ 
-                                      width: `${(bookedPlans[0].completedServices / bookedPlans[0].totalServices) * 100}%` 
-                                    }}
-                                    transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
-                                  ></motion.div>
-                                </div>
-                              </div>
-                              
-                              {/* Schedule summary */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div className="bg-gray-50 p-4 rounded-xl">
-                                  <div className="flex items-center mb-3">
-                                    <CalendarIcon className="w-5 h-5 text-gray-700 mr-2" />
-                                    <h4 className="font-bold">Schedule</h4>
-                                  </div>
-                                  <div className="space-y-2 text-sm text-gray-700">
-                                    <div className="flex justify-between">
-                                      <span>Days:</span>
-                                      <span className="font-medium">{formatDaysOfWeek(bookedPlans[0].daysOfWeek)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Time:</span>
-                                      <span className="font-medium">{bookedPlans[0].timeSlots[0]}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Next service:</span>
-                                      <span className="font-medium">{format(new Date(bookedPlans[0].nextServiceDate), 'EEE, MMM d')}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="bg-gray-50 p-4 rounded-xl">
-                                  <div className="flex items-center mb-3">
-                                    <CheckCircleIcon className="w-5 h-5 text-gray-700 mr-2" />
-                                    <h4 className="font-bold">Includes</h4>
-                                  </div>
-                                  <ul className="text-sm space-y-1">
-                                    {bookedPlans[0].features.slice(0, 3).map((feature, idx) => (
-                                      <motion.li 
-                                        key={idx}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.1 * idx }}
-                                        className="flex items-start"
-                                      >
-                                        <div className="mt-1 mr-2 text-[#c5e82e]">•</div>
-                                        <span className="text-gray-700">{feature}</span>
-                                      </motion.li>
-                                    ))}
-                                    {bookedPlans[0].features.length > 3 && (
-                                      <li className="text-sm text-gray-500">+ {bookedPlans[0].features.length - 3} more</li>
-                                    )}
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Next upcoming services */}
-                            <div className="border-t">
-                              <div className="p-6">
-                                <h4 className="font-bold mb-4">Upcoming Services</h4>
-                                <div className="space-y-4">
-                                  {[...Array(3)].map((_, idx) => {
-                                    const date = addDays(new Date(bookedPlans[0].nextServiceDate), idx * 2);
-                                    return (
-                                      <motion.div 
-                                        key={idx}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.2 + (idx * 0.1) }}
-                                        className="flex items-center justify-between bg-white border rounded-xl p-4 hover:shadow-md transition-shadow"
-                                      >
-                                        <div className="flex items-center">
-                                          <div className="bg-[#c5e82e]/10 p-2 rounded-lg mr-4">
-                                            <DropletIcon className="w-5 h-5 text-[#c5e82e]" />
-                                          </div>
-                                          <div>
-                                            <div className="font-medium">{bookedPlans[0].name.split(' ')[0]} Cleaning Service</div>
-                                            <div className="text-sm text-gray-500">{format(date, 'EEEE, MMMM d')}</div>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center">
-                                          <div className="text-sm text-gray-500 mr-4">{bookedPlans[0].timeSlots[0]}</div>
-                                          <Button variant="outline" size="sm" className="rounded-full">
-                                            Reschedule
-                                          </Button>
-                                        </div>
-                                      </motion.div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Action buttons */}
-                            <div className="bg-gray-50 p-6 border-t">
-                              <div className="flex flex-wrap gap-4 justify-end">
-                                <Button variant="outline" className="rounded-full">
-                                  Manage Plan
-                                </Button>
-                                <Button className="rounded-full bg-black text-white hover:bg-gray-800 border-b-2 border-[#c5e82e]">
-                                  Add Special Service
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    </AnimatePresence>
-                  ) : (
-                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 hover:shadow-md transition-shadow col-span-1">
-                      <CardHeader>
+                    <Card className="bg-gradient-to-br from-gray-900 to-black text-white border-0 overflow-hidden">
+                      <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">Current Plan</CardTitle>
-                          <div className="bg-black p-2 rounded-full">
-                            <svg className="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          </div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <BadgeIcon className="w-5 h-5 text-[#c5e82e]" />
+                            Current Plan
+                          </CardTitle>
+                          <Badge className="bg-[#c5e82e] text-black">Active</Badge>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-xl font-bold">No Active Plan</div>
-                        <p className="text-sm text-gray-500 mt-2">Subscribe to get started</p>
-                        <Button className="w-full mt-4 text-sm bg-black text-white hover:bg-gray-800">
+                        <h3 className="text-xl font-bold">{bookedPlans[0].name}</h3>
+                        <p className="text-gray-400 text-sm mt-1">
+                          Started on {format(new Date(bookedPlans[0].startDate), 'MMM d, yyyy')}
+                        </p>
+                        
+                        <Separator className="my-3 bg-gray-700" />
+                        
+                        <div className="flex items-baseline mb-3">
+                          <span className="text-4xl font-bold">₹{bookedPlans[0].price.toLocaleString('en-IN')}</span>
+                          <span className="text-gray-600 ml-2">/month</span>
+                        </div>
+                        
+                        <Button className="w-full bg-[#c5e82e] hover:bg-[#d0f53a] text-black">
+                          Manage Plan
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="bg-gradient-to-br from-gray-900 to-black text-white border-0 overflow-hidden">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <BadgeIcon className="w-5 h-5 text-[#c5e82e]" />
+                            Subscription
+                          </CardTitle>
+                          <Badge variant="outline" className="text-gray-300 border-gray-600">No Active Plan</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-400 mb-4">
+                          Subscribe to a plan to enjoy regular car wash services customized for your vehicle.
+                        </p>
+                        <Button className="w-full bg-[#c5e82e] hover:bg-[#d0f53a] text-black" onClick={() => setActiveTab('plans')}>
                           Choose a Plan
                         </Button>
                       </CardContent>
                     </Card>
                   )}
                 </div>
+                
+                {/* Active plan details - only show if user has a plan */}
+                {bookedPlans.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Card className="overflow-hidden border-0 shadow-md">
+                      <CardHeader className="bg-gradient-to-r from-gray-900 to-black">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                              <ShieldCheckIcon className="w-5 h-5 text-[#c5e82e]" />
+                              Plan Details
+                            </h3>
+                            <p className="text-[#c5e82e] text-sm mt-1">
+                              Next service {format(new Date(bookedPlans[0].nextServiceDate), 'EEEE, MMMM d')}
+                            </p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                        <div className="bg-gray-50 p-4 rounded-xl">
+                          <div className="flex items-center mb-3">
+                            <CalendarIcon className="w-5 h-5 text-gray-700 mr-2" />
+                            <h4 className="font-bold">Schedule</h4>
+                          </div>
+                          <div className="space-y-2 text-sm text-gray-700">
+                            <div className="flex justify-between">
+                              <span>Days:</span>
+                              <span className="font-medium">{formatDaysOfWeek(bookedPlans[0].daysOfWeek)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Time:</span>
+                              <span className="font-medium">{bookedPlans[0].timeSlots[0]}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Next service:</span>
+                              <span className="font-medium">{format(new Date(bookedPlans[0].nextServiceDate), 'EEE, MMM d')}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 p-4 rounded-xl">
+                          <div className="flex items-center mb-3">
+                            <CheckCircleIcon className="w-5 h-5 text-gray-700 mr-2" />
+                            <h4 className="font-bold">Included Services</h4>
+                          </div>
+                          <ul className="text-sm space-y-1">
+                            {bookedPlans[0].features.slice(0, 3).map((feature, idx) => (
+                              <motion.li 
+                                key={idx}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 * idx }}
+                                className="flex items-start"
+                              >
+                                <div className="mt-1 mr-2 text-[#c5e82e]">•</div>
+                                <span className="text-gray-700">{feature}</span>
+                              </motion.li>
+                            ))}
+                            {bookedPlans[0].features.length > 3 && (
+                              <li className="text-sm text-gray-500 mt-1">+ {bookedPlans[0].features.length - 3} more services</li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                      
+                      {/* Upcoming services */}
+                      <div className="border-t p-6">
+                        <h4 className="font-bold mb-4 flex items-center gap-2">
+                          <CalendarIcon className="w-4 h-4 text-[#c5e82e]" />
+                          Upcoming Services
+                        </h4>
+                        <div className="space-y-4">
+                          {[...Array(3)].map((_, idx) => {
+                            const date = addDays(new Date(bookedPlans[0].nextServiceDate), idx * 2);
+                            return (
+                              <motion.div 
+                                key={idx}
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 + (idx * 0.1) }}
+                                className="flex items-center justify-between bg-white border rounded-xl p-4 hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex items-center">
+                                  <div className="bg-[#c5e82e]/10 p-2 rounded-lg mr-4">
+                                    <DropletIcon className="w-5 h-5 text-[#c5e82e]" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">{idx === 0 ? 'Premium' : idx === 1 ? 'Standard' : 'Express'} Cleaning</div>
+                                    <div className="text-sm text-gray-500">{format(date, 'EEEE, MMMM d')}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center">
+                                  <div className="text-sm text-gray-500 mr-4">{bookedPlans[0].timeSlots[0]}</div>
+                                  <Button variant="outline" size="sm" className="rounded-full">
+                                    {idx === 0 ? 'Reschedule' : 'Change'}
+                                  </Button>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+                
               </div>
             ) : (
-              <div className="text-center py-12">
+              <div className="text-center py-16 bg-white rounded-3xl shadow-sm">
                 <div className="max-w-md mx-auto">
-                  <div className="mb-6 bg-gray-100 w-24 h-24 rounded-full mx-auto flex items-center justify-center">
-                    <CarIcon className="w-12 h-12 text-gray-400" />
+                  <div className="mb-6 w-24 h-24 bg-[#c5e82e]/10 rounded-full mx-auto flex items-center justify-center">
+                    <CarIcon className="w-12 h-12 text-[#c5e82e]" />
                   </div>
-                  <h3 className="text-2xl font-medium text-gray-900 mb-4">Ready to keep your car clean?</h3>
-                  <p className="text-gray-600 mb-8">
-                    Get started with one of our plans to enjoy regular car washing services from our expert wipers, customized for your vehicle.
+                  <h3 className="text-2xl font-bold mb-4">Welcome to Wiper!</h3>
+                  <p className="text-gray-600 mb-8 px-6">
+                    To get started, add your vehicle details so we can provide personalized washing services tailored to your car.
                   </p>
                   <Button 
-                    onClick={() => setActiveTab('plans')}
-                    className="bg-black text-white hover:bg-gray-800 px-8 py-4 rounded-full text-lg"
+                    onClick={handleAddCar}
+                    className="bg-black text-white hover:bg-gray-800 px-8 py-4 rounded-full border-b-2 border-[#c5e82e]"
                   >
-                    View Plans
+                    <PlusIcon className="w-5 h-5 mr-2" /> Add Your Car
                   </Button>
                 </div>
               </div>
             )}
-
-            {userCar && (
-              <div className="mt-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  Recommended for your {userCar.size.charAt(0).toUpperCase() + userCar.size.slice(1)}
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {recommendedServices.map((service) => (
-                    <motion.div
-                      key={service.id}
-                      whileHover={{ y: -5 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-all">
-                        <div className="h-48 bg-gray-200 relative">
-                          {/* Replace with actual image */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <CarIcon className="w-12 h-12 text-gray-400" />
-                          </div>
-                        </div>
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start mb-3">
-                            <h3 className="text-xl font-bold">{service.name}</h3>
-                            <div className="bg-black text-white px-3 py-1 rounded-full text-sm">
-                              ${service.price}
-                            </div>
-                          </div>
-                          <p className="text-gray-600 mb-4 text-sm line-clamp-2">
-                            {service.description}
-                          </p>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-500">
-                              {service.duration}
-                            </span>
-                            <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-5">
-                              Book Now
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Wipers Tab */}
-        {activeTab === 'wipers' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Expert Car Wipers</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {wipers.map((wiper) => (
-                <Card key={wiper.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-48 bg-gray-200"></div>
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-xl font-semibold">{wiper.name}</h3>
-                      <div className="flex items-center bg-yellow-100 px-2 py-1 rounded">
-                        <span className="text-yellow-500 mr-1">★</span>
-                        <span className="text-gray-700 font-medium">{wiper.rating.toFixed(1)}</span>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 mb-4 text-sm">{wiper.experience}</p>
-                    <Separator className="my-4" />
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-medium text-gray-900">
-                        ${wiper.price_per_wash}/wash
-                      </span>
-                      <Button
-                        className="bg-black text-white rounded-full hover:bg-gray-800"
-                      >
-                        Book Now
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </div>
         )}
 
         {/* Plans Tab */}
         {activeTab === 'plans' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Your Plan</h2>
+          <div className="space-y-8">
+            {/* Show active plan banner if user has an active plan */}
+            {bookedPlans.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white shadow-md rounded-xl border border-[#c5e82e]/30 p-6 mb-8"
+              >
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-[#c5e82e]/20 p-3 rounded-full">
+                      <CheckCircleIcon className="w-8 h-8 text-[#c5e82e]" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold">{bookedPlans[0].name}</h3>
+                        <Badge className="bg-[#c5e82e] text-black">Active</Badge>
+                      </div>
+                      <p className="text-gray-600">
+                        You're currently subscribed to our {bookedPlans[0].name.split(' ')[0]} plan 
+                        until {format(addDays(new Date(bookedPlans[0].startDate), 30), 'MMM d, yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="border-[#c5e82e] text-black hover:bg-[#c5e82e]/10 rounded-full"
+                    onClick={() => setActiveTab('dashboard')}
+                  >
+                    View Plan Details
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <h2 className="text-3xl font-bold mb-4">
+                {bookedPlans.length > 0 ? 'Manage Your Subscription' : 'Choose Your Perfect Plan'}
+              </h2>
+              <p className="text-gray-600">
+                {bookedPlans.length > 0 
+                  ? 'Compare your current plan with our other options or make changes to your subscription.'
+                  : 'Select from our range of subscription options designed to keep your vehicle spotless. All plans include professional service by our expert wipers.'
+                }
+              </p>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {plans.map((plan) => (
-                <Card key={plan.id} className={`overflow-hidden ${plan.name === 'Premium' ? 'ring-2 ring-black' : ''}`}>
-                  {plan.name === 'Premium' && (
-                    <div className="bg-black text-white text-center py-2 text-sm font-medium">
-                      MOST POPULAR
-                    </div>
-                  )}
-                  <CardContent className="p-6">
-                    <div className="text-xl font-bold mb-1">{plan.name}</div>
-                    <div className="flex items-baseline mb-6">
-                      <span className="text-3xl font-bold">${plan.price}</span>
-                      <span className="text-gray-600 ml-2">/month</span>
-                    </div>
-                    <Separator className="mb-6" />
-                    <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-start">
-                          <svg className="h-5 w-5 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      className={`w-full ${plan.name === 'Premium' 
-                        ? 'bg-black text-white hover:bg-gray-800' 
-                        : 'bg-white text-black border border-gray-300 hover:bg-gray-50'}`}
-                    >
-                      Subscribe Now
-                    </Button>
-                  </CardContent>
-                </Card>
+                <motion.div
+                  key={plan.id}
+                  whileHover={{ y: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className="flex flex-col h-full"
+                >
+                  <Card 
+                    className={`overflow-hidden flex flex-col h-full border-0 ${
+                      plan.name === 'Premium' 
+                        ? 'shadow-xl shadow-[#c5e82e]/10' 
+                        : 'shadow-lg'
+                    } ${
+                      bookedPlans.length > 0 && bookedPlans[0].name.includes(plan.name)
+                        ? 'ring-2 ring-[#c5e82e]'
+                        : ''
+                    }`}
+                  >
+                    {plan.name === 'Premium' && (
+                      <div className="bg-[#c5e82e] text-black text-center py-2 text-sm font-bold">
+                        MOST POPULAR
+                      </div>
+                    )}
+                    
+                    <CardContent className="p-8 flex flex-col flex-grow">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="text-2xl font-bold">{plan.name}</div>
+                          {bookedPlans.length > 0 && bookedPlans[0].name.includes(plan.name) && (
+                            <Badge className="bg-[#c5e82e] text-black px-3 py-1 text-xs font-semibold whitespace-nowrap">
+                              Current Plan
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-baseline mb-6">
+                          <span className="text-4xl font-bold">₹{plan.price.toLocaleString('en-IN')}</span>
+                          <span className="text-gray-600 ml-2">/month</span>
+                        </div>
+                        
+                        <Separator className="mb-6" />
+                        
+                        <ul className="space-y-4 mb-8">
+                          {plan.features.map((feature, index) => (
+                            <motion.li 
+                              key={index} 
+                              className="flex items-start"
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.1 * index }}
+                            >
+                              <div className={`flex-shrink-0 w-5 h-5 rounded-full ${
+                                plan.name === 'Premium'
+                                  ? 'bg-[#c5e82e]'
+                                  : 'bg-gray-200'
+                              } flex items-center justify-center mt-0.5 mr-3`}>
+                                <CheckIcon className={`w-3 h-3 ${
+                                  plan.name === 'Premium'
+                                    ? 'text-black'
+                                    : 'text-gray-600'
+                                }`} />
+                              </div>
+                              <span className="text-gray-700">{feature}</span>
+                            </motion.li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div className="mt-auto">
+                        {bookedPlans.length > 0 && bookedPlans[0].name.includes(plan.name) ? (
+                          <Button
+                            variant="outline"
+                            className="w-full py-6 border-[#c5e82e] text-black hover:bg-[#c5e82e]/10"
+                          >
+                            Current Plan
+                          </Button>
+                        ) : (
+                          <Button
+                            className={`w-full py-6 ${
+                              plan.name === 'Premium' 
+                                ? 'bg-black text-white hover:bg-gray-800 border-b-2 border-[#c5e82e]' 
+                                : 'bg-white text-black border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {bookedPlans.length > 0 ? 'Switch Plan' : 'Subscribe Now'}
+                          </Button>
+                        )}
+                        
+                        {plan.name === 'Premium' && (
+                          <p className="text-center text-sm text-gray-500 mt-4">
+                            30-day satisfaction guarantee
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
+            </div>
+            
+            {/* Show plan management section if user has an active plan */}
+            {bookedPlans.length > 0 && (
+              <div className="bg-white rounded-2xl p-8 mt-12 border border-gray-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <DropletIcon className="w-5 h-5 text-[#c5e82e]" />
+                  Plan Management Options
+                </h3>
+                
+                <div className="space-y-6">
+                  <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-xl">
+                    <Button 
+                      variant="outline" 
+                      className="md:w-1/3 border-dashed border-gray-300"
+                    >
+                      <CalendarIcon className="w-4 h-4 mr-2" />
+                      Change Schedule
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="md:w-1/3 border-dashed border-gray-300"
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Update Payment
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="md:w-1/3 border-dashed border-gray-300 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200"
+                    >
+                      <Trash2Icon className="w-4 h-4 mr-2" />
+                      Cancel Plan
+                    </Button>
+                  </div>
+                  
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-blue-800 flex items-start gap-3">
+                    <QuestionMarkCircleIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Need help with your subscription?</p>
+                      <p className="text-sm mt-1">Our customer service team is available 24/7 to assist you with any questions about your plan.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="bg-gray-50 rounded-2xl p-8 mt-12 border border-gray-100">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <QuestionMarkCircleIcon className="w-5 h-5 text-[#c5e82e]" />
+                Frequently Asked Questions
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="border-b border-gray-200 pb-4">
+                  <h4 className="font-medium mb-2">Can I cancel my subscription anytime?</h4>
+                  <p className="text-gray-600 text-sm">Yes, all our plans can be cancelled at any time with no cancellation fees.</p>
+                </div>
+                
+                <div className="border-b border-gray-200 pb-4">
+                  <h4 className="font-medium mb-2">How do I schedule my car wash?</h4>
+                  <p className="text-gray-600 text-sm">After subscribing, you can choose your preferred days and time slots from the dashboard.</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">What if I'm not satisfied with the service?</h4>
+                  <p className="text-gray-600 text-sm">We offer a satisfaction guarantee. If you're not happy with a service, we'll redo it at no extra charge.</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Car Tab */}
         {activeTab === 'car' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Vehicle</h2>
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <CarIcon className="w-6 h-6 text-[#c5e82e]" />
+                <span>My Vehicles</span>
+              </h2>
+              
+              <Button 
+                onClick={handleAddCar}
+                className="bg-black text-white hover:bg-gray-800 rounded-full border-b-2 border-[#c5e82e]"
+              >
+                <PlusIcon className="w-4 h-4 mr-2" /> Add Vehicle
+              </Button>
+            </div>
             
             {userCar ? (
               <div className="space-y-6">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row">
+                <Card className="overflow-hidden border-0 rounded-2xl shadow-lg">
+                  <div className="bg-gradient-to-r from-gray-900 to-black p-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-bold text-white">Primary Vehicle</h3>
+                      <Badge className="bg-[#c5e82e] text-black">Active</Badge>
+                    </div>
+                  </div>
+                  
+                  <CardContent className="p-0">
+                    <div className="p-6 flex flex-col md:flex-row">
                       <div className="md:w-1/3 mb-6 md:mb-0 md:pr-6">
-                        <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-                          <CarIcon className="w-20 h-20 text-gray-400" />
+                        <div className="bg-gray-100 rounded-xl h-64 flex items-center justify-center">
+                          <div className="bg-gray-200 p-4 rounded-full">
+                            <CarIcon className="w-16 h-16 text-gray-400" />
+                          </div>
+                        </div>
+                        <div className="flex justify-center mt-4">
+                          <Button variant="outline" size="sm" className="rounded-full text-xs">
+                            <CameraIcon className="w-3 h-3 mr-1" />
+                            Upload Photo
+                          </Button>
                         </div>
                       </div>
+                      
                       <div className="md:w-2/3">
-                        <h3 className="text-2xl font-bold mb-4">{userCar.year} {userCar.make} {userCar.model}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                          <div>
+                        <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                          {userCar.year} {userCar.make} {userCar.model}
+                          <Badge className="bg-gray-100 text-gray-700">
+                            {userCar.size.charAt(0).toUpperCase() + userCar.size.slice(1)}
+                          </Badge>
+                        </h3>
+                        
+                        <div className="grid grid-cols-2 gap-4 md:gap-6 mb-6">
+                          <div className="bg-gray-50 rounded-xl p-4">
                             <p className="text-sm text-gray-500">Color</p>
-                            <p className="font-medium">{userCar.color}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="w-4 h-4 rounded-full bg-gray-300"></div>
+                              <p className="font-medium">{userCar.color}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm text-gray-500">Size</p>
-                            <p className="font-medium capitalize">{userCar.size}</p>
-                          </div>
-                          <div>
+                          
+                          <div className="bg-gray-50 rounded-xl p-4">
                             <p className="text-sm text-gray-500">License Plate</p>
-                            <p className="font-medium">{userCar.plate_number || 'Not provided'}</p>
+                            <p className="font-medium mt-1">{userCar.plate_number || 'Not provided'}</p>
+                          </div>
+                          
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <p className="text-sm text-gray-500">Recommended Service</p>
+                            <p className="font-medium mt-1">{
+                              userCar.size === 'suv' ? 'Deep Clean Package' :
+                              userCar.size === 'small' ? 'Compact Wash' : 
+                              'Standard Exterior Wash'
+                            }</p>
+                          </div>
+                          
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <p className="text-sm text-gray-500">Next Service</p>
+                            <p className="font-medium mt-1">{
+                              bookedPlans.length > 0 
+                                ? format(new Date(bookedPlans[0].nextServiceDate), 'MMM d, yyyy')
+                                : 'No service scheduled'
+                            }</p>
                           </div>
                         </div>
                         
-                        <div className="flex space-x-3 mt-6">
+                        <div className="flex flex-wrap gap-3 mt-6">
                           <Button className="bg-black text-white hover:bg-gray-800">
-                            Edit Details
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit Vehicle
                           </Button>
                           <Button variant="outline">
-                            Add Another Vehicle
+                            <HistoryIcon className="w-4 h-4 mr-2" />
+                            Service History
+                          </Button>
+                          <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700">
+                            <Trash2Icon className="w-4 h-4 mr-2" />
+                            Remove
                           </Button>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Service History</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {[1, 2, 3].map(item => (
-                        <div key={item} className="flex justify-between border-b pb-4 last:border-0">
-                          <div>
-                            <div className="font-medium">Full Exterior Wash</div>
-                            <div className="text-sm text-gray-500">April {20 + item}, 2025</div>
+                    
+                    <Separator />
+                    
+                    {/* Service history section */}
+                    <div className="p-6">
+                      <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                        <HistoryIcon className="w-5 h-5 text-[#c5e82e]" />
+                        Recent Services
+                      </h4>
+                      
+                      <div className="space-y-4">
+                        {[1, 2, 3].map(item => (
+                          <div key={item} className="flex justify-between items-center border-b pb-4 last:border-0">
+                            <div className="flex gap-4">
+                              <div className="bg-gray-100 p-2 rounded-lg">
+                                <DropletIcon className="w-5 h-5 text-gray-600" />
+                              </div>
+                              <div>
+                                <div className="font-medium">{['Full Exterior Wash', 'Premium Detailing', 'Quick Clean'][item % 3]}</div>
+                                <div className="text-sm text-gray-500">April {20 + item}, 2025</div>
+                              </div>
+                            </div>
+                            <Badge className="bg-green-100 text-green-800">Completed</Badge>
                           </div>
-                          <div className="text-sm font-medium">Completed</div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                      
+                      <Button variant="ghost" className="w-full mt-4 text-gray-600">
+                        View All History
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
                 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recommended Maintenance</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <ToolIcon className="w-5 h-5 text-[#c5e82e]" />
+                      Recommended Maintenance
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
                         <div className="flex items-center">
                           <div className="bg-blue-100 p-2 rounded-full mr-3">
                             <WrenchIcon className="w-5 h-5 text-blue-600" />
@@ -955,22 +1108,22 @@ export const Dashboard = () => {
                             <div className="text-sm text-gray-500">Recommended every 3 months</div>
                           </div>
                         </div>
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Button className="bg-black hover:bg-gray-800 text-white rounded-full border-b-2 border-[#c5e82e]">
                           Book Service
                         </Button>
                       </div>
                       
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
                         <div className="flex items-center">
                           <div className="bg-blue-100 p-2 rounded-full mr-3">
-                            <WrenchIcon className="w-5 h-5 text-blue-600" />
+                            <ShieldCheckIcon className="w-5 h-5 text-blue-600" />
                           </div>
                           <div>
                             <div className="font-medium">Wax Protection</div>
                             <div className="text-sm text-gray-500">Recommended every 2 months</div>
                           </div>
                         </div>
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Button className="bg-black hover:bg-gray-800 text-white rounded-full border-b-2 border-[#c5e82e]">
                           Book Service
                         </Button>
                       </div>
@@ -979,19 +1132,19 @@ export const Dashboard = () => {
                 </Card>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CarIcon className="w-10 h-10 text-gray-400" />
+              <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+                <div className="bg-[#c5e82e]/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CarIcon className="w-12 h-12 text-[#c5e82e]" />
                 </div>
-                <h3 className="text-xl font-medium text-gray-900 mb-2">No vehicles added yet</h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Add your vehicle details so we can provide personalized washing services for your car
+                <h3 className="text-2xl font-bold mb-3">No vehicles added yet</h3>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  Add your vehicle details so we can provide personalized washing services tailored to your car
                 </p>
                 <Button 
                   onClick={handleAddCar}
-                  className="bg-black text-white hover:bg-gray-800 rounded-full"
+                  className="bg-black text-white hover:bg-gray-800 px-8 py-4 rounded-full border-b-2 border-[#c5e82e]"
                 >
-                  <PlusIcon className="w-4 h-4 mr-2" /> Add Your Car
+                  <PlusIcon className="w-5 h-5 mr-2" /> Add Your Car
                 </Button>
               </div>
             )}
