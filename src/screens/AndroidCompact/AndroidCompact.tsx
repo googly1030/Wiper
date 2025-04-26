@@ -26,10 +26,14 @@ export const AndroidCompact = (): JSX.Element => {
           password,
         });
         if (error) throw error;
+        navigate('/dashboard');
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          }
         });
         if (error) throw error;
         
@@ -37,8 +41,6 @@ export const AndroidCompact = (): JSX.Element => {
         setIsLogin(true);
         return;
       }
-      
-      navigate('/dashboard');
     } catch (error) {
       if (error.message === "Email not confirmed") {
         setErrorMessage("Please check your email and confirm your address before signing in.");
@@ -151,7 +153,7 @@ export const AndroidCompact = (): JSX.Element => {
           </div>
 
           {/* Right side - Image (visible only on desktop) */}
-          <div className="hidden lg:flex lg:flex-1 bg-[url(/vector.svg)] bg-cover bg-center ">
+          <div className="hidden lg:flex lg:flex-1 bg-[url(/vector.svg)] bg-cover bg-center">
           </div>
         </div>
       </div>

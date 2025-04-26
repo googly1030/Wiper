@@ -9,16 +9,17 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slot": "^1.1.0",
     "@supabase/supabase-js": "^2.39.3",
+    "class-variance-authority": "^0.7.0",
     "clsx": "2.1.1",
+    "framer-motion": "^12.9.2",
     "lucide-react": "^0.453.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.1",
-    "tailwind-merge": "2.5.4",
-    "@radix-ui/react-separator": "^1.1.0",
-    "@radix-ui/react-slot": "^1.1.0",
-    "class-variance-authority": "^0.7.0"
+    "tailwind-merge": "2.5.4"
   },
   "devDependencies": {
     "@types/react": "18.2.0",
