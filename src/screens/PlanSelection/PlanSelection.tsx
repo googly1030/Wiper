@@ -17,6 +17,7 @@ import {
   StarIcon,
   CheckIcon
 } from 'lucide-react';
+import { servicesByType, monthlyPlans } from '../../data/serviceData';
 
 interface Service {
   id: string;
@@ -29,6 +30,7 @@ interface Service {
   features?: string[];
   frequency?: string;
   isMonthlyPlan?: boolean;
+  image?: string; // Added image property
 }
 
 interface UserCar {
@@ -105,81 +107,59 @@ const PlanSelection = () => {
     const fetchServiceDetails = async () => {
       setLoading(true);
       
-      // In a real app, fetch from your database
-      // For this example, we'll use the mock data based on the location state
-      
-      // Get service ID from location state
-      const serviceId = locationState.serviceId;
-      
-      // Mock service data - would be fetched from your API
-      const mockServices: Record<string, Service> = {
-        'monthly-basic': {
-          id: 'monthly-basic',
-          name: 'Basic Monthly Plan',
-          description: 'Essential care for your vehicle with regular exterior cleaning',
-          duration: '30 days',
-          price: 3999, // ₹3,999/month
-          category: 'Monthly',
-          frequency: '4 days/week',
-          features: [
-            '4 exterior washes per week',
-            '1 interior cleaning per month',
-            'Flexible time slots',
-            'Daily updates via app'
-          ],
-          isMonthlyPlan: true
-        },
-        'monthly-premium': {
-          id: 'monthly-premium',
-          name: 'Premium Monthly Plan',
-          description: 'Complete care package with interior and exterior attention',
-          duration: '30 days',
-          price: 5999, // ₹5,999/month
-          category: 'Monthly',
-          popular: true,
-          frequency: '6 days/week',
-          features: [
-            '6 exterior washes per week',
-            '2 interior cleanings per month',
-            'Priority scheduling',
-            'Slot based on your selection',
-            'Daily updates with photos'
-          ],
-          isMonthlyPlan: true
-        },
-        'monthly-ultimate': {
-          id: 'monthly-ultimate',
-          name: 'Ultimate Monthly Plan',
-          description: 'The complete package for car enthusiasts who demand perfection',
-          duration: '30 days',
-          price: 8999, // ₹8,999/month
-          category: 'Monthly',
-          frequency: '7 days/week',
-          features: [
-            'Daily exterior washes',
-            'Weekly interior deep cleaning',
-            'Monthly ceramic coating refresh',
-            'Premium time slots',
-            'Dedicated car care specialist',
-            'Detailed maintenance reports'
-          ],
-          isMonthlyPlan: true
+      try {
+        // Get service ID from location state
+        const serviceId = locationState.serviceId;
+        
+        // Get car details if available
+        const carDetails = locationState.carDetails;
+        const carType = carDetails?.size || 'sedan';
+        
+        // Import the service data directly from your data file
+        // This assumes servicesByType is properly exported from serviceData.ts
+        const { data, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('id', serviceId)
+          .single();
+          
+        let selectedService;
+        
+        if (error) {
+          // Fallback to local data if API call fails
+          const normalizedType = carType === 'coupe' ? 'sedan' : carType;
+          const carServices = servicesByType[normalizedType] || servicesByType.sedan;
+          selectedService = carServices.find(service => service.id === serviceId);
+          
+          if (!selectedService) {
+            // Try to find it in monthly plans directly
+            selectedService = monthlyPlans.find(service => service.id === serviceId);
+          }
+        } else {
+          selectedService = data;
         }
-      };
-      
-      const selectedService = mockServices[serviceId];
-      setService(selectedService);
-      
-      // Parse frequency to get number of days
-      // e.g. "4 days/week" => 4
-      if (selectedService?.frequency) {
-        const frequencyMatch = selectedService.frequency.match(/(\d+)/);
-        if (frequencyMatch && frequencyMatch[1]) {
-          setFrequencyDays(parseInt(frequencyMatch[1]));
+        
+        if (!selectedService) {
+          console.error('Service not found');
+          navigate('/services');
+          return;
         }
+        
+        setService(selectedService);
+        
+        // Parse frequency to get number of days
+        // e.g. "6 days/week" => 6
+        if (selectedService?.frequency) {
+          const frequencyMatch = selectedService.frequency.match(/(\d+)/);
+          if (frequencyMatch && frequencyMatch[1]) {
+            setFrequencyDays(parseInt(frequencyMatch[1]));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching service details:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     fetchServiceDetails();
@@ -299,6 +279,8 @@ const PlanSelection = () => {
         {/* Design elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#c5e82e]/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#c5e82e]/5 rounded-full blur-3xl"></div>
+
+
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div

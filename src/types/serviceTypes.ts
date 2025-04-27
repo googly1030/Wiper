@@ -9,6 +9,7 @@ export interface Service {
   features?: string[];
   frequency?: string;
   isMonthlyPlan?: boolean;
+  image?: string;
 }
 
 export interface UserCar {

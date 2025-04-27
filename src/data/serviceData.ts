@@ -1,58 +1,87 @@
 import { Service } from '../types/serviceTypes';
-
+import HatchBack from './PlanImages/HatchBack.png'
+import Premium from './PlanImages/Premium.png'
+import Sedan from './PlanImages/Sedan.png'
+import Suv from './PlanImages/Suv.png'
 // Monthly plans data - available for all car types
 export const monthlyPlans: Service[] = [
   {
-    id: 'monthly-basic',
-    name: 'Basic Monthly Plan',
-    description: 'Essential care for your vehicle with regular exterior cleaning',
+    id: 'hatchback-plan',
+    name: 'Hatchback Plan',
+    description: 'Essential care plan tailored for compact cars with daily cleaning service',
     duration: '30 days',
-    price: 3999, // ₹3,999/month
+    price: 799,
     category: 'Monthly',
-    frequency: '4 days/week',
+    frequency: '6 days/week',
     features: [
-      '4 exterior washes per week',
-      '1 interior cleaning per month',
-      'Flexible time slots',
-      'Daily updates via app'
+      '6 days service per week',
+      '2 interior cleanings per month',
+      'Slot based on your selection',
+      'Daily updates',
+      'Basic exterior wash',
+      'Window cleaning included'
     ],
-    isMonthlyPlan: true
+    isMonthlyPlan: true,
+    image: HatchBack
   },
   {
-    id: 'monthly-premium',
-    name: 'Premium Monthly Plan',
-    description: 'Complete care package with interior and exterior attention',
+    id: 'sedan-plan',
+    name: 'Sedan Plan',
+    description: 'Complete care package designed specifically for sedan vehicles',
     duration: '30 days',
-    price: 5999, // ₹5,999/month
+    price: 899,
+    category: 'Monthly',
+    frequency: '6 days/week',
+    features: [
+      '6 days service per week',
+      '2 interior cleanings per month',
+      'Slot based on your selection',
+      'Daily updates',
+      'Full exterior detailing',
+      'Tire and rim care'
+    ],
+    isMonthlyPlan: true,
+    image: Sedan
+  },
+  {
+    id: 'suv-plan',
+    name: 'SUV Plan',
+    description: 'Specialized cleaning package for larger vehicles with comprehensive care',
+    duration: '30 days',
+    price: 999,
+    category: 'Monthly',
+    frequency: '6 days/week',
+    features: [
+      '6 days service per week',
+      '2 interior cleanings per month',
+      'Slot based on your selection',
+      'Daily updates',
+      'Complete SUV detailing',
+      'Extra attention to third row'
+    ],
+    isMonthlyPlan: true,
+    image: Suv
+  },
+  {
+    id: 'premium-plan',
+    name: 'Premium Plan',
+    description: 'Ultimate car care experience with premium services and priority treatment',
+    duration: '30 days',
+    price: 1199,
     category: 'Monthly',
     popular: true,
     frequency: '6 days/week',
     features: [
-      '6 exterior washes per week',
+      '6 days service per week',
       '2 interior cleanings per month',
-      'Priority scheduling',
       'Slot based on your selection',
-      'Daily updates with photos'
+      'Daily updates',
+      'Premium products used',
+      'Priority scheduling',
+      'Monthly paint protection'
     ],
-    isMonthlyPlan: true
-  },
-  {
-    id: 'monthly-ultimate',
-    name: 'Ultimate Monthly Plan',
-    description: 'The complete package for car enthusiasts who demand perfection',
-    duration: '30 days',
-    price: 8999, // ₹8,999/month
-    category: 'Monthly',
-    frequency: '7 days/week',
-    features: [
-      'Daily exterior washes',
-      'Weekly interior deep cleaning',
-      'Monthly ceramic coating refresh',
-      'Premium time slots',
-      'Dedicated car care specialist',
-      'Detailed maintenance reports'
-    ],
-    isMonthlyPlan: true
+    isMonthlyPlan: true,
+    image: Premium
   }
 ];
 
