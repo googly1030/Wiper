@@ -438,44 +438,44 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex space-x-6 border-b overflow-x-auto scrollbar-hide">
-          <button 
-            className={`pb-4 px-2 font-medium whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'dashboard' 
-                ? 'text-black border-b-2 border-[#c5e82e]' 
-                : 'text-gray-500 hover:text-gray-800'
-            }`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <HomeIcon className="w-4 h-4" />
-            Dashboard
-          </button>
-          <button 
-            className={`pb-4 px-2 font-medium whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'plans' 
-                ? 'text-black border-b-2 border-[#c5e82e]' 
-                : 'text-gray-500 hover:text-gray-800'
-            }`}
-            onClick={() => setActiveTab('plans')}
-          >
-            <ClipboardIcon className="w-4 h-4" />
-            Subscription Plans
-          </button>
-          <button 
-            className={`pb-4 px-2 font-medium whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'car' 
-                ? 'text-black border-b-2 border-[#c5e82e]' 
-                : 'text-gray-500 hover:text-gray-800'
-            }`}
-            onClick={() => setActiveTab('car')}
-          >
-            <CarIcon className="w-4 h-4" />
-            My Vehicles
-          </button>
-        </div>
-      </div>
+{/* Navigation Tabs - No Scroll on Mobile */}
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+  <div className="grid grid-cols-3 border-b">
+    <button 
+      className={`pb-3 px-1 sm:px-3 font-medium text-center whitespace-nowrap flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 ${
+        activeTab === 'dashboard' 
+          ? 'text-black border-b-2 border-[#c5e82e] relative top-px' 
+          : 'text-gray-500 hover:text-gray-800'
+      }`}
+      onClick={() => setActiveTab('dashboard')}
+    >
+      <HomeIcon className="w-4 h-4" />
+      <span className="text-xs sm:text-sm md:text-base">Dashboard</span>
+    </button>
+    <button 
+      className={`pb-3 px-1 sm:px-3 font-medium text-center whitespace-nowrap flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 ${
+        activeTab === 'plans' 
+          ? 'text-black border-b-2 border-[#c5e82e] relative top-px' 
+          : 'text-gray-500 hover:text-gray-800'
+      }`}
+      onClick={() => setActiveTab('plans')}
+    >
+      <ClipboardIcon className="w-4 h-4" />
+      <span className="text-xs sm:text-sm md:text-base">Plans</span>
+    </button>
+    <button 
+      className={`pb-3 px-1 sm:px-3 font-medium text-center whitespace-nowrap flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 ${
+        activeTab === 'car' 
+          ? 'text-black border-b-2 border-[#c5e82e] relative top-px' 
+          : 'text-gray-500 hover:text-gray-800'
+      }`}
+      onClick={() => setActiveTab('car')}
+    >
+      <CarIcon className="w-4 h-4" />
+      <span className="text-xs sm:text-sm md:text-base">Vehicles</span>
+    </button>
+  </div>
+</div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

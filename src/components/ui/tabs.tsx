@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 
 // Create context for tab state
 type TabsContextType = {
   value: string;
   onValueChange: (value: string) => void;
   variant: 'default' | 'underline' | 'pills';
+  isScrollable?: boolean;
 };
 
 const TabsContext = createContext<TabsContextType | undefined>(undefined);
@@ -17,6 +18,7 @@ interface TabsProps {
   children: React.ReactNode;
   className?: string;
   variant?: 'default' | 'underline' | 'pills';
+  isScrollable?: boolean;
 }
 
 export function Tabs({ 
@@ -25,7 +27,8 @@ export function Tabs({
   onValueChange, 
   children, 
   className = '',
-  variant = 'default'
+  variant = 'default',
+  isScrollable = false
 }: TabsProps) {
   const [tabValue, setTabValue] = useState(value || defaultValue);
   
@@ -40,9 +43,10 @@ export function Tabs({
     <TabsContext.Provider value={{ 
       value: value || tabValue, 
       onValueChange: handleValueChange,
-      variant 
+      variant,
+      isScrollable
     }}>
-      <div className={className}>
+      <div className={`w-full ${className}`}>
         {children}
       </div>
     </TabsContext.Provider>
@@ -58,8 +62,34 @@ interface TabsListProps {
 
 export function TabsList({ children, className = '', scrollable = false }: TabsListProps) {
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const tabRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabsContainer = useRef<HTMLDivElement>(null);
   const childrenArray = React.Children.toArray(children);
+  const context = useContext(TabsContext);
+
+  // Function to scroll active tab into view
+  useEffect(() => {
+    if (scrollable || context?.isScrollable) {
+      const activeTabIndex = childrenArray.findIndex(
+        (child) => React.isValidElement(child) && child.props.value === context?.value
+      );
+      
+      if (activeTabIndex >= 0 && tabRefs.current[activeTabIndex]) {
+        const activeTab = tabRefs.current[activeTabIndex];
+        if (activeTab && tabsContainer.current) {
+          const containerRect = tabsContainer.current.getBoundingClientRect();
+          const tabRect = activeTab.getBoundingClientRect();
+          
+          // Calculate the left position to center the tab
+          const scrollLeft = tabRect.left - containerRect.left - (containerRect.width / 2) + (tabRect.width / 2);
+          tabsContainer.current.scrollTo({
+            left: scrollLeft + tabsContainer.current.scrollLeft,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }
+  }, [context?.value, scrollable, childrenArray, context?.isScrollable]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight') {
@@ -73,15 +103,25 @@ export function TabsList({ children, className = '', scrollable = false }: TabsL
     }
   };
 
+  // Determine if tabs should be scrollable
+  const isScrollable = scrollable || context?.isScrollable;
+
   return (
     <div 
+      ref={tabsContainer}
       role="tablist" 
       className={`
-        ${scrollable 
-          ? 'flex overflow-x-auto scrollbar-hide pb-2' 
-          : 'inline-flex'}
-        h-10 items-center justify-start rounded-md bg-gray-100 p-1 text-gray-600 ${className}
+        ${isScrollable
+          ? 'flex overflow-x-auto scrollbar-hide -mx-1 px-1' 
+          : 'flex flex-wrap sm:flex-nowrap md:inline-flex'}
+        items-center justify-start rounded-md bg-gray-100 p-1 text-gray-600
+        ${className}
       `}
+      style={{
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none', // For Firefox
+        msOverflowStyle: 'none' // For IE and Edge
+      }}
       onKeyDown={handleKeyDown}
     >
       {React.Children.map(childrenArray, (child, index) => {
@@ -122,13 +162,20 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
     throw new Error('TabsTrigger must be used within a Tabs component');
   }
   
-  const { value: selectedValue, onValueChange, variant } = context;
+  const { value: selectedValue, onValueChange, variant, isScrollable } = context;
   const isActive = selectedValue === value;
   
+  // Responsive styles for different variants
   const variantStyles = {
-    default: isActive ? 'bg-white text-gray-900 shadow-sm' : 'hover:bg-gray-200/60 hover:text-gray-900',
-    underline: isActive ? 'border-b-2 border-blue-500 text-blue-600' : 'border-b-2 border-transparent hover:border-gray-200 hover:text-gray-900',
-    pills: isActive ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 hover:text-gray-800',
+    default: isActive 
+      ? 'bg-white text-gray-900 shadow-sm' 
+      : 'hover:bg-gray-200/60 hover:text-gray-900',
+    underline: isActive 
+      ? 'border-b-2 border-blue-500 text-blue-600' 
+      : 'border-b-2 border-transparent hover:border-gray-200 hover:text-gray-900',
+    pills: isActive 
+      ? 'bg-blue-100 text-blue-700' 
+      : 'hover:bg-gray-100 hover:text-gray-800',
   };
   
   return (
@@ -140,10 +187,12 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
       disabled={disabled || loading}
       tabIndex={tabIndex}
       className={`
-        inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 
-        text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2
+        inline-flex items-center justify-center whitespace-nowrap rounded-sm 
+        px-3 py-1.5 text-sm font-medium transition-all 
+        focus-visible:outline-none focus-visible:ring-2
         focus-visible:ring-offset-2 focus-visible:ring-blue-400
         disabled:pointer-events-none disabled:opacity-50
+        ${isScrollable ? 'flex-shrink-0' : 'flex-grow md:flex-grow-0'}
         ${variantStyles[variant]}
         ${className}
       `}
@@ -186,7 +235,7 @@ export function TabsContent({
     <div 
       role="tabpanel"
       data-state={isSelected ? 'active' : 'inactive'}
-      className={`mt-2 focus-visible:outline-none ${className}
+      className={`mt-2 w-full focus-visible:outline-none ${className}
         ${isSelected 
           ? 'animate-in fade-in-0 zoom-in-95 data-[state=active]:block' 
           : 'animate-out fade-out-0 zoom-out-95 data-[state=inactive]:hidden'}`}
@@ -195,3 +244,9 @@ export function TabsContent({
     </div>
   );
 }
+
+// Custom CSS for hiding scrollbars while maintaining functionality
+// Add this to your global CSS or include it inline with the component
+// .scrollbar-hide::-webkit-scrollbar {
+//   display: none;
+// }
