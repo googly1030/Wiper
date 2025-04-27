@@ -5,82 +5,24 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { 
   Clock3Icon, 
-  MapPinIcon, 
-  ShieldIcon, 
   CheckCircleIcon,
   StarIcon,
-  DropletIcon,
-  SparklesIcon,
-  CarIcon,
   CalendarIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Badge } from '../../components/ui/badge';
 import { Separator } from "../../components/ui/separator";
+import { noCarHeroContent } from '../../data/heroContent';
 import Header from '../../components/Header';
 
-// Mock car images based on type
-const carImageMap = {
-  hatchback: "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=1000&auto=format&fit=crop",
-  sedan: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=1000&auto=format&fit=crop",
-  coupe: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000&auto=format&fit=crop",
-  suv: "https://images.unsplash.com/photo-1533558701576-23c65e0272fb?q=80&w=1000&auto=format&fit=crop",
-  luxury: "https://images.unsplash.com/photo-1580274455191-1c62238fa333?q=80&w=1000&auto=format&fit=crop"
-};
+// Import static data from separated files
+import { carImageMap, categoryImageMap, monthlyPlanImageMap } from '../../data/carImages';
+import { monthlyPlans, servicesByType, qualityPromiseFeatures, defaultServiceFeatures } from '../../data/serviceData';
+import { Service, UserCar } from '../../types/serviceTypes';
+import { categoryIcons, getIconByName } from '../../components/CategoryIcons';
 
-// Service images by category
-const categoryImageMap: Record<string, string> = {
-  Monthly: "https://images.unsplash.com/photo-1611129164249-064345060912?q=80&w=800&auto=format&fit=crop",
-  Exterior: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?q=80&w=800&auto=format&fit=crop",
-  Interior: "https://images.unsplash.com/photo-1520031441872-265e4ff70366?q=80&w=800&auto=format&fit=crop",
-  Protection: "https://images.unsplash.com/photo-1617531653332-bd46c24f2068?q=80&w=800&auto=format&fit=crop",
-  Eco: "https://images.unsplash.com/photo-1532996122724-e3c864cb1d2a?q=80&w=800&auto=format&fit=crop",
-  Express: "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
-  default: "https://images.unsplash.com/photo-1605164599901-f8a1482a8c75?q=80&w=800&auto=format&fit=crop"
-};
-
-// Monthly plan-specific images
-const monthlyPlanImageMap: Record<string, string> = {
-  'monthly-basic': "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?q=80&w=800&auto=format&fit=crop",
-'monthly-premium': "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=800&auto=format&fit=crop",
-'monthly-ultimate': "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
-};
-
-// Category icons
-const categoryIcons = {
-  Monthly: <CalendarIcon className="w-4 h-4" />,
-  Exterior: <DropletIcon className="w-4 h-4" />,
-  Interior: <SparklesIcon className="w-4 h-4" />,
-  Protection: <ShieldIcon className="w-4 h-4" />,
-  Eco: <SparklesIcon className="w-4 h-4" />,
-  Express: <Clock3Icon className="w-4 h-4" />,
-  default: <CarIcon className="w-4 h-4" />
-};
-
-interface Service {
-  id: string;
-  name: string;
-  description: string;
-  duration: string;
-  price: number;
-  category: string;
-  popular?: boolean;
-  features?: string[];
-  frequency?: string;
-  isMonthlyPlan?: boolean;
-}
-
-interface UserCar {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  color: string;
-  size: 'hatchback' | 'sedan' | 'coupe' | 'suv' | 'luxury';
-  plate_number?: string;
-}
-
+// Animation variants
 const container = {
   hidden: { opacity: 0 },
   show: {
@@ -154,11 +96,18 @@ const ServicesList = () => {
           // Fetch services for this car type
           fetchServices(carData[0].size);
         } else {
-          // Redirect to add car page if no car found
-          navigate('/add-car');
+          // Instead of redirecting to add-car page, show default services
+          // Use a default car type (sedan) for showing services
+          setUserCar(null);
+          fetchServices('sedan');
+          
+          // Optionally show a prompt to add a car
+          // This can be implemented with a banner or notification in the UI
         }
       } catch (error) {
         console.error('Error checking user and car:', error);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -178,254 +127,6 @@ const ServicesList = () => {
     
     // Map car size to a standard type for service matching
     const normalizedType = carType === 'coupe' ? 'sedan' : carType;
-    
-    // Monthly plans - available for all car types
-    const monthlyPlans = [
-      {
-        id: 'monthly-basic',
-        name: 'Basic Monthly Plan',
-        description: 'Essential care for your vehicle with regular exterior cleaning',
-        duration: '30 days',
-        price: 3999, // ₹3,999/month
-        category: 'Monthly',
-        frequency: '4 days/week',
-        features: [
-          '4 exterior washes per week',
-          '1 interior cleaning per month',
-          'Flexible time slots',
-          'Daily updates via app'
-        ],
-        isMonthlyPlan: true
-      },
-      {
-        id: 'monthly-premium',
-        name: 'Premium Monthly Plan',
-        description: 'Complete care package with interior and exterior attention',
-        duration: '30 days',
-        price: 5999, // ₹5,999/month
-        category: 'Monthly',
-        popular: true,
-        frequency: '6 days/week',
-        features: [
-          '6 exterior washes per week',
-          '2 interior cleanings per month',
-          'Priority scheduling',
-          'Slot based on your selection',
-          'Daily updates with photos'
-        ],
-        isMonthlyPlan: true
-      },
-      {
-        id: 'monthly-ultimate',
-        name: 'Ultimate Monthly Plan',
-        description: 'The complete package for car enthusiasts who demand perfection',
-        duration: '30 days',
-        price: 8999, // ₹8,999/month
-        category: 'Monthly',
-        frequency: '7 days/week',
-        features: [
-          'Daily exterior washes',
-          'Weekly interior deep cleaning',
-          'Monthly ceramic coating refresh',
-          'Premium time slots',
-          'Dedicated car care specialist',
-          'Detailed maintenance reports'
-        ],
-        isMonthlyPlan: true
-      }
-    ];
-    
-    // In a real app, fetch from your database based on car type
-    const servicesByType: Record<string, Service[]> = {
-      hatchback: [
-        ...monthlyPlans,
-        {
-          id: 'h1',
-          name: 'Compact Exterior Wash',
-          description: 'Quick and efficient exterior cleaning tailored for smaller vehicles',
-          duration: '30 mins',
-          price: 799,  // ₹799
-          category: 'Exterior'
-        },
-        {
-          id: 'h2',
-          name: 'Eco Clean Package',
-          description: 'Water-efficient wash perfect for compact cars with eco-friendly products',
-          duration: '45 mins',
-          price: 1299, // ₹1,299
-          category: 'Eco',
-          popular: true
-        },
-        {
-          id: 'h3',
-          name: 'City Car Protection',
-          description: 'Special coating to protect against urban pollutants and scratches',
-          duration: '60 mins',
-          price: 1999, // ₹1,999
-          category: 'Protection'
-        },
-        {
-          id: 'h4',
-          name: 'Small Car Interior Detail',
-          description: 'Complete interior clean designed specifically for compact spaces',
-          duration: '45 mins',
-          price: 1499, // ₹1,499
-          category: 'Interior'
-        },
-        {
-          id: 'h5',
-          name: 'Glass & Trim Treatment',
-          description: 'Specialized cleaning for windows and trim elements',
-          duration: '25 mins',
-          price: 899,  // ₹899
-          category: 'Exterior'
-        }
-      ],
-      sedan: [
-        ...monthlyPlans,
-        {
-          id: 's1',
-          name: 'Full Sedan Wash',
-          description: 'Complete exterior wash designed specifically for sedan bodies',
-          duration: '45 mins',
-          price: 1499, // ₹1,499
-          category: 'Exterior',
-          popular: true
-        },
-        {
-          id: 's2',
-          name: 'Executive Interior Clean',
-          description: 'Premium interior detailing for a professional clean look',
-          duration: '60 mins',
-          price: 2499, // ₹2,499
-          category: 'Interior'
-        },
-        {
-          id: 's3',
-          name: 'Commuter Special',
-          description: 'Quick wash and vacuum ideal for daily drivers',
-          duration: '35 mins',
-          price: 1299, // ₹1,299
-          category: 'Express',
-          popular: true
-        },
-        {
-          id: 's4',
-          name: 'Ceramic Coating',
-          description: 'Long-lasting protection against environmental damage and UV rays',
-          duration: '120 mins',
-          price: 7999, // ₹7,999
-          category: 'Protection'
-        },
-        {
-          id: 's5',
-          name: 'Leather Conditioning',
-          description: 'Special treatment for leather seats to restore and protect',
-          duration: '40 mins',
-          price: 1999, // ₹1,999
-          category: 'Interior'
-        }
-      ],
-      suv: [
-        ...monthlyPlans,
-        {
-          id: 'suv1',
-          name: 'SUV Deep Clean',
-          description: 'Extra attention for larger vehicles with hard-to-reach areas',
-          duration: '75 mins',
-          price: 2999, // ₹2,999
-          category: 'Exterior',
-          popular: true
-        },
-        {
-          id: 'suv2',
-          name: 'Family Vehicle Package',
-          description: 'Interior sanitization and stain removal perfect for family SUVs',
-          duration: '90 mins',
-          price: 3499, // ₹3,499
-          category: 'Interior'
-        },
-        {
-          id: 'suv3',
-          name: 'Off-Road Recovery',
-          description: 'Special cleaning for SUVs after outdoor adventures',
-          duration: '120 mins',
-          price: 4499, // ₹4,499
-          category: 'Exterior'
-        },
-        {
-          id: 'suv4',
-          name: 'Third Row Special',
-          description: 'Complete cleaning of all rows including hard-to-reach third row',
-          duration: '60 mins',
-          price: 2499, // ₹2,499
-          category: 'Interior'
-        },
-        {
-          id: 'suv5',
-          name: 'Premium Protection',
-          description: 'Full body protection with advanced polymer sealants',
-          duration: '100 mins',
-          price: 4999, // ₹4,999
-          category: 'Protection',
-          popular: true
-        }
-      ],
-      // New luxury car services
-      luxury: [
-        ...monthlyPlans,
-        {
-          id: 'lux1',
-          name: 'Premium Concierge Wash',
-          description: 'Complete exterior wash with hand-applied premium waxes and sealants',
-          duration: '90 mins',
-          price: 5999, // ₹3,999
-          category: 'Exterior',
-          popular: true
-        },
-        {
-          id: 'lux2',
-          name: 'White Glove Interior Detail',
-          description: 'Meticulous interior detailing with premium leather conditioning and fabric treatments',
-          duration: '120 mins',
-          price: 8999, // ₹5,999
-          category: 'Interior'
-        },
-        {
-          id: 'lux3',
-          name: 'Ceramic Pro Treatment',
-          description: 'Professional-grade ceramic coating that offers superior protection for luxury finishes',
-          duration: '180 mins',
-          price: 22999, // ₹12,999
-          category: 'Protection',
-          popular: true
-        },
-        {
-          id: 'lux4',
-          name: 'Executive Detail Package',
-          description: 'Comprehensive interior and exterior detailing for the discerning luxury vehicle owner',
-          duration: '240 mins',
-          price: 8999, // ₹8,999
-          category: 'Interior'
-        },
-        {
-          id: 'lux5',
-          name: 'Paint Correction & Enhancement',
-          description: 'Multi-stage paint correction to remove swirl marks and enhance the showroom finish',
-          duration: '300 mins',
-          price: 15999, // ₹15,999
-          category: 'Exterior'
-        },
-        {
-          id: 'lux6',
-          name: 'Express Luxury Refresh',
-          description: 'Quick but thorough exterior wash and interior refresh for luxury vehicles',
-          duration: '60 mins',
-          price: 2999, // ₹2,999
-          category: 'Express'
-        }
-      ]
-    };
     
     // Get services for the car type or default to sedan if type not found
     const carServices = servicesByType[normalizedType] || servicesByType.sedan;
@@ -452,7 +153,6 @@ const ServicesList = () => {
     }, 800);
   };
 
-  // Adding the missing handleBookService function
   const handleBookService = (serviceId: string) => {
     setBookingService(serviceId);
     
@@ -531,6 +231,15 @@ const ServicesList = () => {
     return "User";
   };
 
+  // Add a function to switch between cars
+  const switchCar = (index: number) => {
+    if (userCars[index]) {
+      setSelectedCarIndex(index);
+      setUserCar(userCars[index]);
+      fetchServices(userCars[index].size);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 flex items-center justify-center">
@@ -546,16 +255,6 @@ const ServicesList = () => {
     );
   }
 
-  // Add a function to switch between cars
-  const switchCar = (index: number) => {
-    if (userCars[index]) {
-      setSelectedCarIndex(index);
-      setUserCar(userCars[index]);
-      fetchServices(userCars[index].size);
-    }
-  };
-
-  // Modify the Hero Section to include car switching UI
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header component in a fixed position */}
@@ -583,8 +282,8 @@ const ServicesList = () => {
             className="absolute inset-0"
           >
             <img 
-              src={getCarImage(userCar)} 
-              alt={`${userCar?.make || 'Car'} ${userCar?.model || 'Model'}`}
+              src={userCar ? getCarImage(userCar) : noCarHeroContent.imageSrc} 
+              alt={userCar ? `${userCar.make} ${userCar.model}` : 'Car wash service'} 
               className="w-full h-full object-cover object-center"
             />
           </motion.div>
@@ -597,54 +296,73 @@ const ServicesList = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <Badge className="bg-[#c5e82e] text-black font-medium px-3 py-1">Your Vehicle</Badge>
-                  
-                  {/* Only show car switcher if user has multiple cars */}
-                  {userCars.length > 1 && (
-                    <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-full pl-2 pr-3 py-1 border border-white/20">
-                      <span className="text-white text-xs mr-2">Switch car:</span>
-                      <div className="flex gap-1">
-                        {userCars.map((car, index) => (
-                          <button
-                            key={car.id}
-                            onClick={() => switchCar(index)}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                              selectedCarIndex === index 
-                                ? 'bg-[#c5e82e] text-black' 
-                                : 'bg-black/50 text-white hover:bg-black/70'
-                            }`}
-                          >
-                            <span className="text-xs font-medium">{index + 1}</span>
-                          </button>
-                        ))}
-                      </div>
+                {userCar ? (
+                  /* User has car - show car details */
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <Badge className="bg-[#c5e82e] text-black font-medium px-3 py-1">Your Vehicle</Badge>
+                      
+                      {/* Only show car switcher if user has multiple cars */}
+                      {userCars.length > 1 && (
+                        <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-full pl-2 pr-3 py-1 border border-white/20">
+                          <span className="text-white text-xs mr-2">Switch car:</span>
+                          <div className="flex gap-1">
+                            {userCars.map((car, index) => (
+                              <button
+                                key={car.id}
+                                onClick={() => switchCar(index)}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                                  selectedCarIndex === index 
+                                    ? 'bg-[#c5e82e] text-black' 
+                                    : 'bg-black/50 text-white hover:bg-black/70'
+                                }`}
+                              >
+                                <span className="text-xs font-medium">{index + 1}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                
-                <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
-                  {userCar?.year || ''} {userCar?.make || ''} <br />
-                  <span className="text-[#c5e82e]">{userCar?.model || ''}</span>
-                </h1>
-                
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
-                    {userCar?.size ? userCar.size.charAt(0).toUpperCase() + userCar.size.slice(1) : 'Vehicle'}
-                  </Badge>
-                  <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
-                    {userCar?.color ? userCar.color.charAt(0).toUpperCase() + userCar.color.slice(1) : 'Color'}
-                  </Badge>
-                  {userCar?.plate_number && (
-                    <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
-                      {userCar.plate_number}
-                    </Badge>
-                  )}
-                </div>
-                
-                <p className="text-gray-200 mb-8 max-w-md">
-                  Premium wash services tailored for your {userCar?.make || 'vehicle'} {userCar?.model || ''}. Select from our curated options below.
-                </p>
+                    
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+                      {userCar.year} {userCar.make} <br />
+                      <span className="text-[#c5e82e]">{userCar.model}</span>
+                    </h1>
+                    
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
+                        {userCar.size.charAt(0).toUpperCase() + userCar.size.slice(1)}
+                      </Badge>
+                      <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
+                        {userCar.color.charAt(0).toUpperCase() + userCar.color.slice(1)}
+                      </Badge>
+                      {userCar.plate_number && (
+                        <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white">
+                          {userCar.plate_number}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <p className="text-gray-200 mb-8 max-w-md">
+                      Premium wash services tailored for your {userCar.make} {userCar.model}. Select from our curated options below.
+                    </p>
+                  </>
+                ) : (
+                  /* No car added yet - show generic content */
+                  <>
+                    <Badge className="bg-[#c5e82e] text-black font-medium px-3 py-1 mb-4">Get Started</Badge>
+                    
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
+                      {noCarHeroContent.title} <br />
+                      <span className="text-[#c5e82e]">{noCarHeroContent.subtitle}</span>
+                    </h1>
+                    
+                    <p className="text-gray-200 mb-8 max-w-md">
+                      {noCarHeroContent.description}
+                    </p>
+                  </>
+                )}
                 
                 <motion.div 
                   className="inline-block"
@@ -653,9 +371,9 @@ const ServicesList = () => {
                 >
                   <Button 
                     className="bg-[#c5e82e] hover:bg-[#d0f53a] text-black text-lg font-medium px-8 py-6 rounded-full"
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate(userCar ? '/dashboard' : noCarHeroContent.ctaLink)}
                   >
-                    View Services
+                    {userCar ? 'View Services' : noCarHeroContent.ctaText}
                   </Button>
                 </motion.div>
               </motion.div>
@@ -896,30 +614,14 @@ const ServicesList = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                {[
-                  {
-                    icon: <ShieldIcon className="h-8 w-8" />,
-                    title: "Premium Products",
-                    description: "We use only high-quality, eco-friendly products that are safe for your vehicle and the environment."
-                  },
-                  {
-                    icon: <Clock3Icon className="h-8 w-8" />,
-                    title: "Efficient Service",
-                    description: "Our trained professionals work efficiently to deliver exceptional results without wasting your time."
-                  },
-                  {
-                    icon: <MapPinIcon className="h-8 w-8" />,
-                    title: "Convenient Locations",
-                    description: "Multiple service locations near you with professional equipment and comfortable waiting areas."
-                  }
-                ].map((item, i) => (
+                {qualityPromiseFeatures.map((item, i) => (
                   <motion.div 
                     key={i} 
                     className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10"
                     whileHover={{ y: -5, boxShadow: '0 15px 30px rgba(0,0,0,0.2)' }}
                   >
                     <div className="bg-[#c5e82e] p-3 rounded-xl inline-flex mb-4 text-black">
-                      {item.icon}
+                      {getIconByName(item.icon)}
                     </div>
                     <h3 className="font-bold text-xl mb-3">{item.title}</h3>
                     <p className="text-gray-300 text-sm">{item.description}</p>
@@ -968,7 +670,6 @@ const ServicesList = () => {
               exit={{ scale: 0.9, y: 20, opacity: 0 }}
               transition={{ type: "spring", damping: 25 }}
             >
-              {/* Rest of your modal code remains the same */}
               {services.filter(s => s.id === showServiceDetails).map(service => (
                 <div key={service.id} className="p-0">
                   <div className="h-64 relative">
@@ -1041,13 +742,7 @@ const ServicesList = () => {
                         {service.isMonthlyPlan ? "Plan Includes" : "What's Included"}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {(service.features || [
-                          "Complete exterior wash",
-                          "Hand-dried finish",
-                          "Wheel cleaning",
-                          "Tire dressing",
-                          "Window cleaning"
-                        ]).map((item, i) => (
+                        {(service.features || defaultServiceFeatures).map((item, i) => (
                           <div key={i} className="flex items-start">
                             <div className="mt-0.5 mr-3 bg-[#c5e82e] p-1 rounded-full">
                               <CheckCircleIcon className="h-4 w-4 text-black" />
