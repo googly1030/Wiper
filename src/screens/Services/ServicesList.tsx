@@ -18,7 +18,7 @@ import Header from '../../components/Header';
 
 // Import static data from separated files
 import { carImageMap, categoryImageMap, monthlyPlanImageMap } from '../../data/carImages';
-import { monthlyPlans, servicesByType, qualityPromiseFeatures, defaultServiceFeatures } from '../../data/serviceData';
+import { servicesByType, qualityPromiseFeatures, defaultServiceFeatures } from '../../data/serviceData';
 import { Service, UserCar } from '../../types/serviceTypes';
 import { categoryIcons, getIconByName } from '../../components/CategoryIcons';
 
@@ -118,7 +118,10 @@ const ServicesList = () => {
     if (currentCategory === "all") {
       setFilteredServices(services);
     } else {
-      setFilteredServices(services.filter(service => service.category === currentCategory));
+      // Filter services that exactly match the selected category
+      setFilteredServices(services.filter(service => 
+        service.category.toLowerCase() === currentCategory.toLowerCase()
+      ));
     }
   }, [currentCategory, services]);
 
@@ -134,7 +137,16 @@ const ServicesList = () => {
     // Add some delay to simulate API fetch
     setTimeout(() => {
       setServices(carServices);
-      setFilteredServices(carServices);
+      
+      // Filter services by the current category immediately when setting them
+      if (currentCategory === "all") {
+        setFilteredServices(carServices);
+      } else {
+        setFilteredServices(carServices.filter(service => 
+          service.category.toLowerCase() === currentCategory.toLowerCase()
+        ));
+      }
+      
       setLoading(false);
     }, 500);
   };
@@ -167,14 +179,7 @@ const ServicesList = () => {
     }, 800);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
+
 
   const getServiceCategories = () => {
     const categories = services.map(service => service.category);
@@ -187,10 +192,10 @@ const ServicesList = () => {
   };
   
   const getServiceImage = (category: string, serviceId?: string) => {
-    if (serviceId && monthlyPlanImageMap[serviceId]) {
-      return monthlyPlanImageMap[serviceId];
+    if (serviceId && monthlyPlanImageMap[serviceId as keyof typeof monthlyPlanImageMap]) {
+      return monthlyPlanImageMap[serviceId as keyof typeof monthlyPlanImageMap];
     }
-    return categoryImageMap[category] || categoryImageMap.default;
+    return categoryImageMap[category as keyof typeof categoryImageMap] || categoryImageMap.default;
   };
   
   const getCategoryIcon = (category: string) => {
@@ -204,22 +209,6 @@ const ServicesList = () => {
       setShowServiceDetails(serviceId);
     }
   };
-
-  const getUserInitials = () => {
-    if (!user) return "U";
-    if (user.user_metadata?.name) {
-      const nameParts = user.user_metadata.name.split(' ');
-      if (nameParts.length > 1) {
-        return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
-      }
-      return user.user_metadata.name[0].toUpperCase();
-    }
-    if (user.email) {
-      return user.email[0].toUpperCase();
-    }
-    return "U";
-  };
-
   const getUserDisplayName = () => {
     if (!user) return "User";
     if (user.user_metadata?.name) {

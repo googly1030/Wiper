@@ -763,10 +763,31 @@ export const AndroidCompact = (): JSX.Element => {
 
           {errorMessage && (
             <motion.div 
-              className="p-4 text-sm text-red-800 bg-red-50 rounded-lg border-l-4 border-red-500 shadow-sm"
+              className="p-4 text-sm rounded-lg shadow-sm flex flex-col gap-2"
               variants={itemVariants}
+              style={{
+                backgroundColor: errorMessage.includes("check your email") ? "rgba(197, 232, 46, 0.15)" : "rgba(239, 68, 68, 0.1)", 
+                borderLeft: `4px solid ${errorMessage.includes("check your email") ? "#c5e82e" : "#ef4444"}`
+              }}
             >
-              {errorMessage}
+              <span className={errorMessage.includes("check your email") ? "text-gray-800" : "text-red-800"}>
+                {errorMessage}
+              </span>
+              
+              {errorMessage.includes("check your email") && (
+                <Button
+                  onClick={() => {
+                    window.open("https://mail.google.com/mail/", "_blank");  // Opens Gmail in a new tab
+                  }}
+                  className="mt-2 py-2 px-4 bg-[#c5e82e] text-black text-sm font-medium rounded-lg shadow-sm hover:bg-[#b8d52a] transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>
+                  Open Gmail
+                </Button>
+              )}
             </motion.div>
           )}
 

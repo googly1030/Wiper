@@ -1,93 +1,103 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 export const EmailConfirmation = () => {
-  const [verifying, setVerifying] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleEmailConfirmation = async () => {
+    // Get the hash fragment from the URL
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const access_token = hashParams.get('access_token');
+    const refresh_token = hashParams.get('refresh_token');
+    
+    const handleConfirmation = async () => {
       try {
-        // Get the hash fragment from the URL
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
+        if (!access_token) {
+          throw new Error('No access token found in URL');
+        }
         
-        // Check if there's an error in the URL
-        if (params.get('error')) {
-          setError(`${params.get('error_description') || 'Verification failed'}. Please try signing in or request a new confirmation email.`);
-          setVerifying(false);
-          return;
-        }
+        // Set the auth session with the tokens
+        const { data, error } = await supabase.auth.setSession({
+          access_token: access_token,
+          refresh_token: refresh_token || ''
+        });
 
-        // If hash params include access_token, it's a successful confirmation
-        if (params.get('access_token')) {
-          // The supabase client will automatically handle the session
-          const { data, error } = await supabase.auth.getSession();
-          if (error) throw error;
-          
-          // Store session in localStorage
-          if (data.session) {
-            localStorage.setItem('userSession', JSON.stringify({
-              expires_at: data.session.expires_at,
-              user: {
-                id: data.session.user.id,
-                email: data.session.user.email
-              }
-            }));
-          }
-          
-          // Navigate to dashboard after a short delay to allow session to be processed
-          setTimeout(() => navigate('/dashboard'), 1500);
-        } else {
-          setError('Invalid confirmation link. Please try signing in or request a new confirmation email.');
+        if (error) throw error;
+        
+        console.log('Email confirmed successfully');
+        
+        // Store session info in localStorage for quick access
+        if (data.session) {
+          localStorage.setItem('userSession', JSON.stringify({
+            expires_at: data.session.expires_at,
+            user: {
+              id: data.session.user.id,
+              email: data.session.user.email
+            }
+          }));
         }
-      } catch (err) {
-        console.error('Verification error:', err);
-        setError('Something went wrong during verification. Please try signing in again.');
+        
+        // Change this line to redirect to services instead of dashboard
+        navigate('/services', { replace: true });
+      } catch (error) {
+        console.error('Error during email confirmation:', error);
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('An unknown error occurred');
+        }
       } finally {
-        setVerifying(false);
+        setLoading(false);
       }
     };
-
-    handleEmailConfirmation();
+    
+    handleConfirmation();
   }, [navigate]);
 
-  return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-8 text-center">
-        <div className="w-[53px] h-[54px] bg-black rounded-full flex items-center justify-center mx-auto mb-6">
-          <img
-            className="w-[39px] h-8"
-            alt="Logo"
-            src="/group-46-1.png"
-          />
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-lg font-medium">Confirming your email...</p>
         </div>
-        
-        {verifying ? (
-          <>
-            <h2 className="text-2xl font-bold mb-4">Verifying your email</h2>
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-black mx-auto"></div>
-          </>
-        ) : error ? (
-          <>
-            <h2 className="text-2xl font-bold mb-4">Verification Issue</h2>
-            <p className="text-red-600 mb-6">{error}</p>
-            <button
-              onClick={() => navigate('/')}
-              className="w-full py-3 px-4 bg-black text-white rounded-full hover:bg-gray-800"
-            >
-              Return to Sign In
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold mb-4">Email Verified!</h2>
-            <p className="text-green-600 mb-6">Your email has been verified successfully.</p>
-            <p className="mb-6">You'll be redirected to the dashboard shortly...</p>
-          </>
-        )}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-50 to-gray-100">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold mb-2">Email Confirmation Failed</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
+          >
+            Return to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-gray-50 to-gray-100">
+      <div className="text-center max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
+        <div className="text-[#c5e82e] text-5xl mb-4">✓</div>
+        <h1 className="text-2xl font-bold mb-2">Email Confirmed Successfully!</h1>
+        <p className="text-gray-600 mb-4">Your email has been verified. You'll be redirected to the services page shortly.</p>
+        <button 
+          onClick={() => navigate('/services')}
+          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
+        >
+          Go to Services
+        </button>
       </div>
     </div>
   );
