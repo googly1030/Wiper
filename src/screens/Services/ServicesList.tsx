@@ -56,6 +56,8 @@ const ServicesList = () => {
   const [userCars, setUserCars] = useState<UserCar[]>([]);
   const [selectedCarIndex, setSelectedCarIndex] = useState<number>(0);
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
+  // Add this state to manage the modal
+  const [showNoCarsModal, setShowNoCarsModal] = useState<boolean>(false);
   
   useEffect(() => {
     const handleScroll = () => {
@@ -156,6 +158,13 @@ const ServicesList = () => {
   };
 
   const handlePlanSelection = (serviceId: string) => {
+    // Check if user has a car
+    if (!userCar) {
+      // Show modal telling user they need to add a car first
+      setShowNoCarsModal(true);
+      return;
+    }
+    
     setBookingService(serviceId);
     
     // Navigate to plan selection page with calendar and time slots
@@ -830,6 +839,64 @@ const ServicesList = () => {
                   </div>
                 </div>
               ))}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* No Car Modal */}
+      <AnimatePresence>
+        {showNoCarsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowNoCarsModal(false)}
+          >
+            <motion.div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: "spring", damping: 25 }}
+            >
+              <div className="p-6 sm:p-8">
+                <div className="flex items-center justify-center mb-6">
+                  <div className="bg-yellow-50 rounded-full p-3">
+                    <CalendarIcon className="h-8 w-8 text-yellow-500" />
+                  </div>
+                </div>
+                
+                <h3 className="text-xl sm:text-2xl font-bold text-center mb-2">Car Details Required</h3>
+                
+                <p className="text-gray-600 text-center mb-6">
+                  You need to add your car details before selecting a plan. This helps us customize the service for your vehicle.
+                </p>
+                
+                <div className="flex flex-col gap-3">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      className="w-full bg-black text-white hover:bg-gray-800 py-4 rounded-xl text-base border-b-3 border-[#c5e82e]"
+                      onClick={() => {
+                        setShowNoCarsModal(false);
+                        navigate('/add-car');
+                      }}
+                    >
+                      Add Car Details
+                    </Button>
+                  </motion.div>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full py-3.5 rounded-xl text-sm"
+                    onClick={() => setShowNoCarsModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
