@@ -51,11 +51,8 @@ interface LocationState {
 // Available time slots
 const timeSlots = [
   { id: 1, time: '08:00 AM - 09:30 AM' },
-  { id: 2, time: '10:00 AM - 11:30 AM' },
-  { id: 3, time: '12:00 PM - 01:30 PM' },
-  { id: 4, time: '02:00 PM - 03:30 PM' },
-  { id: 5, time: '04:00 PM - 05:30 PM' },
-  { id: 6, time: '06:00 PM - 07:30 PM' },
+  { id: 2, time: '12:00 PM - 01:30 PM' },
+  { id: 3, time: '04:00 PM - 05:30 PM' },
 ];
 
 // Animation variants
@@ -203,9 +200,10 @@ const PlanSelection = () => {
     });
   };
 
+  // Modify the handleSubmit function to only check for timeSlots
   const handleSubmit = async () => {
-    if (selectedDaysOfWeek.length === 0 || selectedTimeSlots.length === 0) {
-      alert("Please select days and time slots for your plan");
+    if (selectedTimeSlots.length === 0) {
+      alert("Please select at least one time slot for your plan");
       return;
     }
 
@@ -214,7 +212,6 @@ const PlanSelection = () => {
     // Here you would typically send this data to your backend
     const bookingData = {
       serviceId: service?.id,
-      daysOfWeek: selectedDaysOfWeek,
       timeSlots: selectedTimeSlots.map(id => timeSlots.find(slot => slot.id === id)?.time),
       startDate: format(new Date(), 'yyyy-MM-dd')
     };
@@ -244,10 +241,10 @@ const PlanSelection = () => {
 
   // Generate days from today to end of month
   const today = startOfToday();
-  const monthEnd = endOfMonth(today);
+  const nextThreeMonths = addDays(today, 90); // Show 90 days (approx. 3 months)
   const weekDays = eachDayOfInterval({
     start: today,
-    end: monthEnd
+    end: nextThreeMonths
   });
 
   if (loading) {
@@ -404,11 +401,11 @@ const PlanSelection = () => {
                   <div className="bg-gray-50 p-4 rounded-xl">
                     <h4 className="font-bold mb-3">How it works</h4>
                     <ol className="space-y-2 list-decimal pl-5 text-gray-600 text-sm">
-                      <li>Select your preferred days of the week</li>
-                      <li>Choose convenient time slots</li>
+                      <li>Choose your convenient time slot</li>
                       <li>Our team will arrive at the scheduled times</li>
                       <li>Manage your bookings through the app</li>
                       <li>Automatic monthly billing for convenience</li>
+                      <li>Service schedule can be modified anytime</li>
                     </ol>
                   </div>
                 </CardContent>
@@ -422,83 +419,125 @@ const PlanSelection = () => {
               animate="visible"
               className="lg:col-span-2"
             >
+              {/* Calendar Section */}
               <Card className="bg-white shadow-lg rounded-3xl overflow-hidden border-0 mb-6">
                 <div className="bg-gradient-to-r from-gray-900 to-black p-6">
-                  <h3 className="text-xl font-bold text-white mb-2">Select Days</h3>
-                  <p className="text-gray-300 text-sm">Choose {frequencyDays} days/week for your service</p>
+                  <h3 className="text-xl font-bold text-white mb-2">Service Days</h3>
+                  <p className="text-gray-300 text-sm">{frequencyDays} days/week service schedule</p>
                 </div>
                 
                 <CardContent className="p-6">
                   <div className="mb-8">
-                    <h4 className="font-medium mb-4">Days of Week</h4>
                     <div className="flex justify-between items-center mb-5">
-                      <Button 
-                        variant="outline" 
-                        className="rounded-full w-10 h-10 p-0"
-                        onClick={() => navigateWeek('prev')}
-                      >
-                        <ChevronLeftIcon className="h-5 w-5" />
-                      </Button>
-                      
-                      <div className="text-sm font-medium">
-                        Select your {frequencyDays} preferred days
+                      <div className="text-sm text-gray-500 font-medium">
+                        Today is {format(new Date(), 'MMMM d, yyyy')}
                       </div>
                       
-                      <Button 
-                        variant="outline" 
-                        className="rounded-full w-10 h-10 p-0"
-                        onClick={() => navigateWeek('next')}
+                      <div className="text-sm font-medium text-gray-500">
+                        {service?.frequency} service
+                      </div>
+                    </div>
+                    
+                    <div className="relative">
+                      <style jsx>{`
+                        .hide-scrollbar {
+                          -ms-overflow-style: none;
+                          scrollbar-width: none;
+                        }
+                        .hide-scrollbar::-webkit-scrollbar {
+                          display: none;
+                        }
+                        .grabable {
+                          cursor: grab;
+                          user-select: none;
+                        }
+                        .grabable:active {
+                          cursor: grabbing;
+                        }
+                      `}</style>
+
+                      <div 
+                        className="overflow-x-auto pb-4 hide-scrollbar grabable" 
+                        style={{ scrollBehavior: 'smooth' }} 
+                        id="calendarScroll"
+                        onMouseDown={(e) => {
+                          const slider = e.currentTarget;
+                          let startX = e.pageX - slider.offsetLeft;
+                          let scrollLeft = slider.scrollLeft;
+
+                          function onMouseMove(e) {
+                            const x = e.pageX - slider.offsetLeft;
+                            const walk = (x - startX) * 2; // Scroll speed multiplier
+                            slider.scrollLeft = scrollLeft - walk;
+                          }
+
+                          function onMouseUp() {
+                            document.removeEventListener('mousemove', onMouseMove);
+                            document.removeEventListener('mouseup', onMouseUp);
+                            slider.classList.remove('grabbing');
+                          }
+
+                          slider.classList.add('grabbing');
+                          document.addEventListener('mousemove', onMouseMove);
+                          document.addEventListener('mouseup', onMouseUp);
+                        }}
+                      >
+                        <div className="flex gap-3 min-w-max px-1 py-2">
+                          {weekDays.map((date, index) => {
+                            const isToday = isSameDay(date, new Date());
+                            const currentMonth = format(date, 'MMM');
+                            
+                            return (
+                              <div 
+                                key={index}
+                                className={`flex-shrink-0 w-16 h-24 flex flex-col items-center justify-center rounded-xl ${
+                                  isToday 
+                                    ? 'bg-gray-800 text-white shadow-md' 
+                                    : 'bg-gray-100'
+                                }`}
+                              >
+                                <div className="text-sm font-medium">{format(date, 'EEE')}</div>
+                                <div className={`text-xl font-bold mb-1 ${isToday ? 'text-white' : 'text-gray-700'}`}>
+                                  {format(date, 'd')}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {currentMonth}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      {/* Right arrow navigation */}
+                      <button 
+                        className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-black/80 hover:bg-black text-white rounded-full p-2 shadow-lg z-10"
+                        onClick={() => {
+                          const scrollContainer = document.getElementById('calendarScroll');
+                          if (scrollContainer) {
+                            // Scroll by 4 cards (smooth)
+                            const cardWidth = 76 * 4; // 16px width + 3px gap × 4 cards
+                            scrollContainer.scrollTo({
+                              left: scrollContainer.scrollLeft + cardWidth,
+                              behavior: 'smooth'
+                            });
+                          }
+                        }}
                       >
                         <ChevronRightIcon className="h-5 w-5" />
-                      </Button>
+                      </button>
+
+                      {/* Add a gradient fade effect on the right side */}
+                      <div className="absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
                     </div>
                     
-                    <div className="grid grid-cols-7 gap-4 flex-wrap">
-                      {weekDays.map((date, index) => {
-                        const dayIndex = getDay(date);
-                        const isSelected = selectedDaysOfWeek.includes(dayIndex);
-                        
-                        return (
-                          <motion.div 
-                            key={index}
-                            className={`aspect-square flex flex-col items-center justify-center rounded-xl cursor-pointer transition-all ${
-                              isSelected 
-                                ? 'bg-[#c5e82e] text-black shadow-lg shadow-[#c5e82e]/20' 
-                                : 'bg-gray-100 hover:bg-gray-200'
-                            }`}
-                            onClick={() => handleDayOfWeekSelect(dayIndex)}
-                            whileHover={{ y: -3 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <div className="text-sm font-medium">{getDayName(date)}</div>
-                            <div className="text-xl font-bold mb-1">{getDayNumber(date)}</div>
-                            {isSelected && (
-                              <motion.div 
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="bg-white rounded-full p-1"
-                              >
-                                <CheckIcon className="h-3 w-3" />
-                              </motion.div>
-                            )}
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                    
-                    <div className="text-sm text-gray-500 mt-3">
-                      <span className="font-medium">Selected: </span>
-                      {selectedDaysOfWeek.length > 0 
-                        ? selectedDaysOfWeek.map(day => 
-                            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day]
-                          ).join(', ')
-                        : 'None'}
-                      <span className="ml-1">({selectedDaysOfWeek.length}/{frequencyDays})</span>
+                    <div className="text-sm text-center mt-6 text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    This plan is valid for {service?.duration} days from the date of activation.
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-white shadow-lg rounded-3xl overflow-hidden border-0">
                 <div className="bg-gradient-to-r from-gray-900 to-black p-6">
                   <h3 className="text-xl font-bold text-white mb-2">Select Time</h3>
@@ -558,7 +597,7 @@ const PlanSelection = () => {
               >
                 <Button 
                   onClick={handleSubmit}
-                  disabled={selectedDaysOfWeek.length === 0 || selectedTimeSlots.length === 0 || submitLoading}
+                  disabled={selectedTimeSlots.length === 0 || submitLoading}
                   className={`bg-black text-white hover:bg-gray-800 px-8 py-6 rounded-full text-lg border-b-4 border-[#c5e82e] min-w-[200px] ${
                     submitLoading ? 'opacity-80' : ''
                   }`}
