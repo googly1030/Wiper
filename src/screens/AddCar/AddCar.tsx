@@ -165,7 +165,6 @@ export const AddCar = () => {
     switch (size) {
       case 'hatchback': return 'Hatchback';
       case 'sedan': return 'Sedan';
-      case 'coupe': return 'Coupe';
       case 'suv': return 'SUV';
       case 'luxury': return 'Luxury';
       default: return size.charAt(0).toUpperCase() + size.slice(1);
