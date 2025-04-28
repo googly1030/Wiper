@@ -733,7 +733,7 @@ const ServicesList = () => {
                 <div key={service.id} className="p-0">
                   <div className="h-48 sm:h-64 relative">
                     <img 
-                      src={getServiceImage(service.category, service.id)}
+                      src={getServiceImage(service.category, service.id, service)}
                       alt={service.name}
                       className="w-full h-full object-cover"
                     />
