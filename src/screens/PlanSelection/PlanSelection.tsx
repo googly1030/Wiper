@@ -209,14 +209,36 @@ const PlanSelection = () => {
 
     setSubmitLoading(true);
     
-    // Here you would typically send this data to your backend
+    // Create booking data object
     const bookingData = {
+      id: `plan-${Date.now()}`,
       serviceId: service?.id,
+      name: service?.name,
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      daysOfWeek: selectedDaysOfWeek.length > 0 ? selectedDaysOfWeek : [1, 3, 5], // Default to Mon, Wed, Fri
       timeSlots: selectedTimeSlots.map(id => timeSlots.find(slot => slot.id === id)?.time),
-      startDate: format(new Date(), 'yyyy-MM-dd')
+      features: service?.features || [],
+      nextServiceDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+      completedServices: 0,
+      totalServices: 24, // Assuming monthly plan with 24 services
+      price: service?.price || 0
     };
     
-    console.log("Booking data:", bookingData);
+    // Store in localStorage
+    try {
+      // Get existing plans or initialize empty array
+      const existingPlans = JSON.parse(localStorage.getItem('bookedPlans') || '[]');
+      
+      // Add new plan
+      const updatedPlans = [...existingPlans, bookingData];
+      
+      // Save to localStorage
+      localStorage.setItem('bookedPlans', JSON.stringify(updatedPlans));
+      
+      console.log("Plan saved to localStorage:", bookingData);
+    } catch (error) {
+      console.error("Error saving plan to localStorage:", error);
+    }
     
     // Simulate API call
     setTimeout(() => {
@@ -315,11 +337,7 @@ const PlanSelection = () => {
                 <CalendarIcon className="w-3.5 h-3.5" />
                 {service?.frequency}
               </Badge>
-              
-              <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white px-3 py-1.5 flex items-center gap-1.5">
-                <Clock3Icon className="w-3.5 h-3.5" />
-                {service?.duration}
-              </Badge>
+            
             </div>
           </motion.div>
         </div>
@@ -388,7 +406,7 @@ const PlanSelection = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Duration</span>
-                      <span className="font-medium">{service?.duration}</span>
+                      <span className="font-medium">1 month</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">First billing</span>
@@ -420,7 +438,7 @@ const PlanSelection = () => {
               className="lg:col-span-2"
             >
               {/* Calendar Section */}
-              <Card className="bg-white shadow-lg rounded-3xl overflow-hidden border-0 mb-6">
+              {/* <Card className="bg-white shadow-lg rounded-3xl overflow-hidden border-0 mb-6">
                 <div className="bg-gradient-to-r from-gray-900 to-black p-6">
                   <h3 className="text-xl font-bold text-white mb-2">Service Days</h3>
                   <p className="text-gray-300 text-sm">{frequencyDays} days/week service schedule</p>
@@ -467,7 +485,7 @@ const PlanSelection = () => {
 
                           function onMouseMove(e) {
                             const x = e.pageX - slider.offsetLeft;
-                            const walk = (x - startX) * 2; // Scroll speed multiplier
+                            const walk = (x - startX) * 2;
                             slider.scrollLeft = scrollLeft - walk;
                           }
 
@@ -509,14 +527,12 @@ const PlanSelection = () => {
                         </div>
                       </div>
                       
-                      {/* Right arrow navigation */}
                       <button 
                         className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-black/80 hover:bg-black text-white rounded-full p-2 shadow-lg z-10"
                         onClick={() => {
                           const scrollContainer = document.getElementById('calendarScroll');
                           if (scrollContainer) {
-                            // Scroll by 4 cards (smooth)
-                            const cardWidth = 76 * 4; // 16px width + 3px gap × 4 cards
+                            const cardWidth = 76 * 4; 
                             scrollContainer.scrollTo({
                               left: scrollContainer.scrollLeft + cardWidth,
                               behavior: 'smooth'
@@ -527,7 +543,6 @@ const PlanSelection = () => {
                         <ChevronRightIcon className="h-5 w-5" />
                       </button>
 
-                      {/* Add a gradient fade effect on the right side */}
                       <div className="absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
                     </div>
                     
@@ -536,7 +551,7 @@ const PlanSelection = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <Card className="bg-white shadow-lg rounded-3xl overflow-hidden border-0">
                 <div className="bg-gradient-to-r from-gray-900 to-black p-6">

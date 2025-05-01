@@ -31,10 +31,7 @@ import {
   categoryImageMap,
   monthlyPlanImageMap,
 } from "../../data/carImages";
-import {
-  servicesByType,
-  defaultServiceFeatures,
-} from "../../data/serviceData";
+import { servicesByType, defaultServiceFeatures } from "../../data/serviceData";
 import { Service, UserCar } from "../../types/serviceTypes";
 import { categoryIcons } from "../../components/CategoryIcons";
 
@@ -148,7 +145,7 @@ const ServicesList = () => {
   }, [services]);
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
+    const storedUsername = localStorage.getItem("username");
     setUsername(storedUsername || "User");
   }, []);
 
@@ -355,7 +352,6 @@ const ServicesList = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-
                 {userCar ? (
                   <>
                     <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -391,7 +387,9 @@ const ServicesList = () => {
                     </div>
 
                     <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 text-white">
-                      <span className="text-[#c5e82e]">{userCar.make} {userCar.model}</span>
+                      <span className="text-[#c5e82e]">
+                        {userCar.make} {userCar.model}
+                      </span>
                     </h1>
 
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -481,9 +479,6 @@ const ServicesList = () => {
             transition={{ delay: 0.5 }}
             className="mb-8 sm:mb-12 text-center"
           >
-            <span className="inline-block mb-2 px-3 py-1 bg-black text-[#c5e82e] rounded-full text-xs sm:text-sm font-medium">
-              Monthly Car Care Plans
-            </span>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
               Welcome Back, {username}
             </h2>
@@ -651,16 +646,17 @@ const ServicesList = () => {
                               </div>
                             </div>
 
-                            {userCar && service.vehicleType && userCar.size.toLowerCase() === service.vehicleType.toLowerCase() && (
-  <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
-    <Badge className="bg-[#c5e82e] text-black font-medium px-2 py-0.5 sm:px-3 sm:py-1 shadow-lg flex items-center gap-1 text-xs">
-      <CheckCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-      Recommended
-    </Badge>
-  </div>
-)}
-
-
+                            {userCar &&
+                              service.vehicleType &&
+                              userCar.size.toLowerCase() ===
+                                service.vehicleType.toLowerCase() && (
+                                <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
+                                  <Badge className="bg-[#c5e82e] text-black font-medium px-2 py-0.5 sm:px-3 sm:py-1 shadow-lg flex items-center gap-1 text-xs">
+                                    <CheckCircleIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    Recommended
+                                  </Badge>
+                                </div>
+                              )}
 
                             {/* Category & duration */}
                             <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex justify-between items-center">
