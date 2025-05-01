@@ -14,9 +14,9 @@ import Header from '../../components/Header';
 
 interface CarFormData {
   plate_number: string;
-  make: string; // Car Brand
-  model: string; // Car Make
-  size: 'hatchback' | 'sedan' | 'coupe' | 'suv' | 'luxury'; 
+  make: string; 
+  model: string; 
+  size: 'hatchback' | 'sedan' | 'suv' | 'Premium'; 
 }
 
 export const AddCar = () => {
@@ -28,7 +28,7 @@ export const AddCar = () => {
     plate_number: '',
     make: '',
     model: '',
-    size: 'sedan', // Default size
+    size: 'sedan',
   });
   const [user, setUser] = useState<any>(null);
   const [scrolled, setScrolled] = useState<boolean>(false);
@@ -95,7 +95,7 @@ export const AddCar = () => {
           user_id: user.id,
           make: formData.make,
           model: formData.model,
-          year: new Date().getFullYear(), // Default to current year
+          year: new Date().getFullYear(),
           color: 'Not specified',
           size: formData.size,
           plate_number: formData.plate_number
@@ -339,9 +339,8 @@ export const AddCar = () => {
                 >
                   <option value="sedan">Sedan</option>
                   <option value="hatchback">Hatchback</option>
-                  <option value="coupe">Coupe</option>
                   <option value="suv">SUV</option>
-                  <option value="luxury">Luxury</option>
+                  <option value="premium">Premium</option>
                 </select>
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
