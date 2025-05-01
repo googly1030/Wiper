@@ -1,13 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { format, addDays, startOfWeek, getDay, isSameDay, startOfToday, endOfMonth, eachDayOfInterval } from 'date-fns';
-import { supabase } from '../../lib/supabase';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Separator } from '../../components/ui/separator';
-import Header from '../../components/Header';
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  format,
+  addDays,
+  startOfWeek,
+  getDay,
+  isSameDay,
+  startOfToday,
+  endOfMonth,
+  eachDayOfInterval,
+} from "date-fns";
+import { supabase } from "../../lib/supabase";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Separator } from "../../components/ui/separator";
+import Header from "../../components/Header";
 import {
   CheckCircleIcon,
   CalendarIcon,
@@ -15,9 +24,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   StarIcon,
-  CheckIcon
-} from 'lucide-react';
-import { servicesByType, monthlyPlans } from '../../data/serviceData';
+  CheckIcon,
+} from "lucide-react";
+import { servicesByType, monthlyPlans } from "../../data/serviceData";
 
 interface Service {
   id: string;
@@ -50,9 +59,9 @@ interface LocationState {
 
 // Available time slots
 const timeSlots = [
-  { id: 1, time: '08:00 AM - 09:30 AM' },
-  { id: 2, time: '12:00 PM - 01:30 PM' },
-  { id: 3, time: '04:00 PM - 05:30 PM' },
+  { id: 1, time: "08:00 AM - 09:30 AM" },
+  { id: 2, time: "12:00 PM - 01:30 PM" },
+  { id: 3, time: "04:00 PM - 05:30 PM" },
 ];
 
 // Animation variants
@@ -61,14 +70,14 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
-    }
-  }
+      staggerChildren: 0.1,
+    },
+  },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 }
+  visible: { opacity: 1, y: 0 },
 };
 
 const PlanSelection = () => {
@@ -78,7 +87,9 @@ const PlanSelection = () => {
   const [service, setService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
   const [frequencyDays, setFrequencyDays] = useState<number>(0);
   const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<number[]>([]);
   const [submitLoading, setSubmitLoading] = useState<boolean>(false);
@@ -88,62 +99,67 @@ const PlanSelection = () => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
     const locationState = location.state as LocationState;
-    
+
     if (!locationState || !locationState.serviceId) {
-      navigate('/services');
+      navigate("/services");
       return;
     }
-    
+
     const fetchServiceDetails = async () => {
       setLoading(true);
-      
+
       try {
         // Get service ID from location state
         const serviceId = locationState.serviceId;
-        
+
         // Get car details if available
         const carDetails = locationState.carDetails;
-        const carType = carDetails?.size || 'sedan';
-        
+        const carType = carDetails?.size || "sedan";
+
         // Import the service data directly from your data file
         // This assumes servicesByType is properly exported from serviceData.ts
         const { data, error } = await supabase
-          .from('services')
-          .select('*')
-          .eq('id', serviceId)
+          .from("services")
+          .select("*")
+          .eq("id", serviceId)
           .single();
-          
+
         let selectedService;
-        
+
         if (error) {
           // Fallback to local data if API call fails
-          const normalizedType = carType === 'coupe' ? 'sedan' : carType;
-          const carServices = servicesByType[normalizedType] || servicesByType.sedan;
-          selectedService = carServices.find(service => service.id === serviceId);
-          
+          const normalizedType = carType === "coupe" ? "sedan" : carType;
+          const carServices =
+            servicesByType[normalizedType] || servicesByType.sedan;
+          selectedService = carServices.find(
+            (service) => service.id === serviceId
+          );
+
           if (!selectedService) {
             // Try to find it in monthly plans directly
-            selectedService = monthlyPlans.find(service => service.id === serviceId);
+            selectedService = monthlyPlans.find(
+              (service) => service.id === serviceId
+            );
           }
         } else {
           selectedService = data;
         }
-        
+
         if (!selectedService) {
-          console.error('Service not found');
-          navigate('/services');
+          console.error("Service not found");
+          navigate("/services");
           return;
         }
-        
+
         setService(selectedService);
-        
+
         // Parse frequency to get number of days
         // e.g. "6 days/week" => 6
         if (selectedService?.frequency) {
@@ -153,12 +169,12 @@ const PlanSelection = () => {
           }
         }
       } catch (error) {
-        console.error('Error fetching service details:', error);
+        console.error("Error fetching service details:", error);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchServiceDetails();
   }, [location, navigate]);
 
@@ -167,9 +183,9 @@ const PlanSelection = () => {
   };
 
   const handleTimeSlotSelect = (slotId: number) => {
-    setSelectedTimeSlots(prev => {
+    setSelectedTimeSlots((prev) => {
       if (prev.includes(slotId)) {
-        return prev.filter(id => id !== slotId);
+        return prev.filter((id) => id !== slotId);
       } else {
         return [...prev, slotId].sort((a, b) => a - b);
       }
@@ -177,25 +193,25 @@ const PlanSelection = () => {
   };
 
   const handleDayOfWeekSelect = (day: number) => {
-    setSelectedDaysOfWeek(prev => {
+    setSelectedDaysOfWeek((prev) => {
       // Remove if already selected
       if (prev.includes(day)) {
-        return prev.filter(d => d !== day);
+        return prev.filter((d) => d !== day);
       }
-      
+
       // Add if we haven't reached frequency limit
       if (prev.length < frequencyDays) {
         return [...prev, day].sort((a, b) => a - b);
       }
-      
+
       // Replace the first day with the new one (shift pattern)
       return [...prev.slice(1), day].sort((a, b) => a - b);
     });
   };
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    setCurrentWeekStart(prev => {
-      const days = direction === 'prev' ? -7 : 7;
+  const navigateWeek = (direction: "prev" | "next") => {
+    setCurrentWeekStart((prev) => {
+      const days = direction === "prev" ? -7 : 7;
       return addDays(prev, days);
     });
   };
@@ -208,57 +224,62 @@ const PlanSelection = () => {
     }
 
     setSubmitLoading(true);
-    
+
     // Create booking data object
     const bookingData = {
       id: `plan-${Date.now()}`,
       serviceId: service?.id,
       name: service?.name,
-      startDate: format(new Date(), 'yyyy-MM-dd'),
-      daysOfWeek: selectedDaysOfWeek.length > 0 ? selectedDaysOfWeek : [1, 3, 5], // Default to Mon, Wed, Fri
-      timeSlots: selectedTimeSlots.map(id => timeSlots.find(slot => slot.id === id)?.time),
+      startDate: format(new Date(), "yyyy-MM-dd"),
+      daysOfWeek:
+        selectedDaysOfWeek.length > 0 ? selectedDaysOfWeek : [1, 3, 5], // Default to Mon, Wed, Fri
+      timeSlots: selectedTimeSlots.map(
+        (id) => timeSlots.find((slot) => slot.id === id)?.time
+      ),
       features: service?.features || [],
-      nextServiceDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+      nextServiceDate: format(addDays(new Date(), 1), "yyyy-MM-dd"),
       completedServices: 0,
       totalServices: 24, // Assuming monthly plan with 24 services
-      price: service?.price || 0
+      price: service?.price || 0,
     };
-    
+
     // Store in localStorage
     try {
       // Get existing plans or initialize empty array
-      const existingPlans = JSON.parse(localStorage.getItem('bookedPlans') || '[]');
-      
+      const existingPlans = JSON.parse(
+        localStorage.getItem("bookedPlans") || "[]"
+      );
+
       // Add new plan
       const updatedPlans = [...existingPlans, bookingData];
-      
+
       // Save to localStorage
-      localStorage.setItem('bookedPlans', JSON.stringify(updatedPlans));
-      
+      localStorage.setItem("bookedPlans", JSON.stringify(updatedPlans));
+
       console.log("Plan saved to localStorage:", bookingData);
     } catch (error) {
       console.error("Error saving plan to localStorage:", error);
     }
-    
+
     // Simulate API call
     setTimeout(() => {
       // Navigate to success page or dashboard
-      navigate('/dashboard', { 
-        state: { 
+      navigate("/dashboard", {
+        state: {
           success: true,
-          message: "Your plan has been successfully activated"
-        }
+          message: "Your plan has been successfully activated",
+        },
       });
     }, 1000);
   };
 
   // Format day names for display
   const getDayName = (date: Date) => {
-    return format(date, 'EEE');
+    return format(date, "EEE");
   };
-  
+
   const getDayNumber = (date: Date) => {
-    return format(date, 'd');
+    return format(date, "d");
   };
 
   // Generate days from today to end of month
@@ -266,7 +287,7 @@ const PlanSelection = () => {
   const nextThreeMonths = addDays(today, 90); // Show 90 days (approx. 3 months)
   const weekDays = eachDayOfInterval({
     start: today,
-    end: nextThreeMonths
+    end: nextThreeMonths,
   });
 
   if (loading) {
@@ -275,9 +296,14 @@ const PlanSelection = () => {
         <div className="text-center">
           <div className="relative w-24 h-24 mx-auto mb-5">
             <div className="absolute inset-0 border-4 border-t-[#c5e82e] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-            <div className="absolute inset-2 border-4 border-t-transparent border-r-[#c5e82e] border-b-transparent border-l-transparent rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
+            <div
+              className="absolute inset-2 border-4 border-t-transparent border-r-[#c5e82e] border-b-transparent border-l-transparent rounded-full animate-spin"
+              style={{ animationDuration: "1.5s" }}
+            ></div>
           </div>
-          <div className="text-xl font-medium text-white">Setting up your plan...</div>
+          <div className="text-xl font-medium text-white">
+            Setting up your plan...
+          </div>
           <p className="text-gray-400 mt-2">Loading schedule options</p>
         </div>
       </div>
@@ -287,19 +313,18 @@ const PlanSelection = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header component in a fixed position */}
-      <div className={`sticky top-0 z-40 transition-all duration-300 ${
-        scrolled ? "bg-white shadow-md" : "bg-transparent"
-      }`}>
+      <div
+        className={`sticky top-0 z-40 transition-all duration-300 ${
+          scrolled ? "bg-white shadow-md" : "bg-transparent"
+        }`}
+      >
         <Header />
       </div>
 
       {/* Hero Section */}
       <div className="relative bg-gradient-to-r from-gray-900 to-black py-16">
-        {/* Design elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#c5e82e]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#c5e82e]/5 rounded-full blur-3xl"></div>
-
-
+        <div className="absolute top-0 right-0 w-32 sm:w-64 h-32 sm:h-64 bg-[#c5e82e]/5 rounded-full blur-3xl pointer-events-none overflow-hidden opacity-60"></div>
+        <div className="absolute bottom-0 left-0 w-40 sm:w-96 h-40 sm:h-96 bg-[#c5e82e]/5 rounded-full blur-3xl pointer-events-none overflow-hidden opacity-60"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
@@ -307,37 +332,32 @@ const PlanSelection = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }} 
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-            >
-              {service?.popular && (
-                <Badge className="bg-[#c5e82e] text-black mb-4 px-3 py-1 inline-flex items-center gap-1">
-                  <StarIcon className="w-3.5 h-3.5" />
-                  Popular Choice
-                </Badge>
-              )}
-            </motion.div>
-            
+            ></motion.div>
+
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
               {service?.name}
             </h1>
-            
+
             <p className="text-xl text-[#c5e82e] font-medium mb-4">
-              ₹{service?.price.toLocaleString('en-IN')}/month
+              ₹{service?.price.toLocaleString("en-IN")}/month
             </p>
-            
+
             <p className="text-gray-300 max-w-2xl mx-auto mb-6">
               {service?.description}
             </p>
-            
+
             <div className="flex flex-wrap gap-3 justify-center items-center mb-6">
-              <Badge variant="outline" className="border-white/30 bg-black/30 backdrop-blur-sm text-white px-3 py-1.5 flex items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className="border-white/30 bg-black/30 backdrop-blur-sm text-white px-3 py-1.5 flex items-center gap-1.5"
+              >
                 <CalendarIcon className="w-3.5 h-3.5" />
                 {service?.frequency}
               </Badge>
-            
             </div>
           </motion.div>
         </div>
@@ -347,7 +367,11 @@ const PlanSelection = () => {
       <main className="relative z-10">
         {/* Curved separator */}
         <div className="relative -mt-12 z-10">
-          <svg className="fill-white w-full h-24" preserveAspectRatio="none" viewBox="0 0 1440 96">
+          <svg
+            className="fill-white w-full h-24"
+            preserveAspectRatio="none"
+            viewBox="0 0 1440 96"
+          >
             <path d="M0,96L80,80C160,64,320,32,480,32C640,32,800,64,960,69.3C1120,75,1280,53,1360,42.7L1440,32L1440,96L1360,96C1280,96,1120,96,960,96C800,96,640,96,480,96C320,96,160,96,80,96L0,96Z"></path>
           </svg>
         </div>
@@ -375,17 +399,21 @@ const PlanSelection = () => {
             >
               <Card className="bg-white shadow-lg rounded-3xl overflow-hidden border-0">
                 <div className="bg-gradient-to-r from-gray-900 to-black p-6">
-                  <h3 className="text-xl font-bold text-white mb-2">Plan Details</h3>
-                  <p className="text-gray-300 text-sm">{service?.frequency} service for your vehicle</p>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Plan Details
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    {service?.frequency} service for your vehicle
+                  </p>
                 </div>
-                
+
                 <CardContent className="p-6">
                   <h4 className="font-bold mb-4 text-lg">What's Included:</h4>
-                  
+
                   <ul className="space-y-3 mb-6">
                     {service?.features?.map((feature, index) => (
-                      <motion.li 
-                        key={index} 
+                      <motion.li
+                        key={index}
                         className="flex items-start"
                         variants={itemVariants}
                       >
@@ -396,13 +424,15 @@ const PlanSelection = () => {
                       </motion.li>
                     ))}
                   </ul>
-                  
+
                   <Separator className="my-6" />
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Plan price</span>
-                      <span className="font-medium">₹{service?.price.toLocaleString('en-IN')}</span>
+                      <span className="font-medium">
+                        ₹{service?.price.toLocaleString("en-IN")}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Duration</span>
@@ -410,12 +440,14 @@ const PlanSelection = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">First billing</span>
-                      <span className="font-medium">{format(new Date(), 'dd MMM, yyyy')}</span>
+                      <span className="font-medium">
+                        {format(new Date(), "dd MMM, yyyy")}
+                      </span>
                     </div>
                   </div>
-                  
+
                   <Separator className="my-6" />
-                  
+
                   <div className="bg-gray-50 p-4 rounded-xl">
                     <h4 className="font-bold mb-3">How it works</h4>
                     <ol className="space-y-2 list-decimal pl-5 text-gray-600 text-sm">
@@ -429,7 +461,7 @@ const PlanSelection = () => {
                 </CardContent>
               </Card>
             </motion.div>
-            
+
             {/* Right Column - Calendar & Schedule */}
             <motion.div
               variants={containerVariants}
@@ -555,31 +587,41 @@ const PlanSelection = () => {
 
               <Card className="bg-white shadow-lg rounded-3xl overflow-hidden border-0">
                 <div className="bg-gradient-to-r from-gray-900 to-black p-6">
-                  <h3 className="text-xl font-bold text-white mb-2">Select Time</h3>
-                  <p className="text-gray-300 text-sm">Choose your preferred time slot</p>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Select Time
+                  </h3>
+                  <p className="text-gray-300 text-sm">
+                    Choose your preferred time slot
+                  </p>
                 </div>
-                
+
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {timeSlots.map((slot) => {
                       const isSelected = selectedTimeSlots.includes(slot.id);
-                      
+
                       return (
                         <motion.div
                           key={slot.id}
                           className={`p-4 rounded-xl border cursor-pointer ${
-                            isSelected 
-                              ? 'border-[#c5e82e] bg-[#c5e82e]/10' 
-                              : 'border-gray-200 hover:border-gray-300'
+                            isSelected
+                              ? "border-[#c5e82e] bg-[#c5e82e]/10"
+                              : "border-gray-200 hover:border-gray-300"
                           }`}
                           onClick={() => handleTimeSlotSelect(slot.id)}
                           whileHover={{ y: -3 }}
                           whileTap={{ scale: 0.98 }}
                         >
                           <div className="flex items-center">
-                            <Clock3Icon className={`w-4 h-4 mr-2 ${isSelected ? 'text-[#c5e82e]' : 'text-gray-400'}`} />
-                            <span className={isSelected ? 'font-medium' : ''}>{slot.time}</span>
-                            
+                            <Clock3Icon
+                              className={`w-4 h-4 mr-2 ${
+                                isSelected ? "text-[#c5e82e]" : "text-gray-400"
+                              }`}
+                            />
+                            <span className={isSelected ? "font-medium" : ""}>
+                              {slot.time}
+                            </span>
+
                             {isSelected && (
                               <div className="ml-auto">
                                 <div className="bg-[#c5e82e] rounded-full p-1">
@@ -592,29 +634,32 @@ const PlanSelection = () => {
                       );
                     })}
                   </div>
-                  
+
                   <div className="text-sm text-gray-500 mt-4">
                     <span className="font-medium">Selected: </span>
-                    {selectedTimeSlots.length > 0 
-                      ? selectedTimeSlots.map(id => 
-                          timeSlots.find(slot => slot.id === id)?.time
-                        ).join(', ')
-                      : 'None'}
+                    {selectedTimeSlots.length > 0
+                      ? selectedTimeSlots
+                          .map(
+                            (id) =>
+                              timeSlots.find((slot) => slot.id === id)?.time
+                          )
+                          .join(", ")
+                      : "None"}
                   </div>
                 </CardContent>
               </Card>
-              
-              <motion.div 
+
+              <motion.div
                 className="mt-8 text-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
               >
-                <Button 
+                <Button
                   onClick={handleSubmit}
                   disabled={selectedTimeSlots.length === 0 || submitLoading}
                   className={`bg-black text-white hover:bg-gray-800 px-8 py-6 rounded-full text-lg border-b-4 border-[#c5e82e] min-w-[200px] ${
-                    submitLoading ? 'opacity-80' : ''
+                    submitLoading ? "opacity-80" : ""
                   }`}
                 >
                   {submitLoading ? (
@@ -623,7 +668,7 @@ const PlanSelection = () => {
                       Processing...
                     </>
                   ) : (
-                    'Complete Plan Setup'
+                    "Complete Plan Setup"
                   )}
                 </Button>
               </motion.div>

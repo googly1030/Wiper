@@ -380,57 +380,6 @@ export const Profile = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-8 sm:py-16 -mt-6">
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
           <div className="flex flex-col md:flex-row">
-            {/* Tab navigation for mobile view */}
-            <div className="md:hidden p-4">
-  <div className="overflow-x-auto scrollbar-thin pb-2">
-    <div className="flex space-x-3 min-w-max px-1">
-      {sections.map((section) => (
-        <motion.button
-          key={section.id}
-          onClick={() => setActiveTab(section.id)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-            activeTab === section.id 
-              ? 'bg-[#c5e82e]/10 text-black' 
-              : 'text-gray-600 hover:bg-gray-50'
-          }`}
-          whileTap={{ scale: 0.98 }}
-        >
-          <div className={`p-1.5 rounded-lg ${
-            activeTab === section.id 
-              ? 'bg-[#c5e82e] text-black' 
-              : 'bg-gray-100 text-gray-500'
-          }`}>
-            {section.icon}
-          </div>
-          <span className="text-sm font-medium">{section.name}</span>
-        </motion.button>
-      ))}
-    </div>
-  </div>
-  
-  <style jsx global>{`
-    /* Custom thin scrollbar styles */
-    .scrollbar-thin::-webkit-scrollbar {
-      height: 4px;
-    }
-    
-    .scrollbar-thin::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
-    
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-      background: #c5e82e;
-      border-radius: 10px;
-    }
-    
-    .scrollbar-thin {
-      scrollbar-width: thin;
-      scrollbar-color: #c5e82e #f1f1f1;
-    }
-  `}</style>
-</div>
-            
             {/* Left sidebar with tabs - Hidden on mobile */}
             <div className="hidden md:block md:w-80 border-r border-gray-100 shrink-0">
               <div className="p-6">

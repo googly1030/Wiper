@@ -107,7 +107,7 @@ const Header = () => {
               <div className="relative" ref={profileDropdownRef}>
                 <div 
                   className="flex items-center cursor-pointer"
-                  onClick={() => navigate('/user-settings')} // Changed from '/profile' to '/user-settings'
+                  onClick={() => navigate('/user-settings')}
                 >
                   <motion.div 
                     whileHover={{ scale: 1.05 }}
