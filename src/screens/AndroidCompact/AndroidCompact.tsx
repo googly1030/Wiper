@@ -113,8 +113,8 @@ export const AndroidCompact = (): JSX.Element => {
           throw new Error("Passwords don't match");
         }
         
-        // Submit all signup data
-        const { error } = await supabase.auth.signUp({
+        // Submit all signup data with auto-confirm enabled
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -125,21 +125,45 @@ export const AndroidCompact = (): JSX.Element => {
               apartment_number: apartmentNumber,
               referral_code: referralCode || null,
             },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            // Remove emailRedirectTo option
           }
         });
+        
         if (error) throw error;
         
-        setErrorMessage("Please check your email for a confirmation link before signing in.");
-        setIsLogin(true);
+        // If user was created successfully, sign them in automatically
+        if (data.user) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (signInError) throw signInError;
+          
+          // Store session info in localStorage
+          if (signInData.session) {
+            localStorage.setItem('userSession', JSON.stringify({
+              expires_at: signInData.session.expires_at,
+              user: {
+                id: signInData.session.user.id,
+                email: signInData.session.user.email
+              }
+            }));
+          }
+          
+          // Redirect to services page
+          navigate('/services');
+        } else {
+          // Handle edge case
+          setIsLogin(true);
+          setErrorMessage("Account created. Please sign in.");
+        }
+        
         return;
       }
     } catch (error) {
-      if (error.message === "Email not confirmed") {
-        setErrorMessage("Please check your email and confirm your address before signing in.");
-      } else {
-        setErrorMessage(error.message);
-      }
+      // Remove specific error message about email confirmation
+      setErrorMessage(error.message);
     } finally {
       setLoading(false);
     }
@@ -299,18 +323,8 @@ export const AndroidCompact = (): JSX.Element => {
             />
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-[#c5e82e] focus:ring-[#a5c824] border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
+          <div className="flex items-center justify-end">
+
             <div className="text-sm">
               <a href="#" className="font-medium text-[#a5c824] hover:text-[#c5e82e] transition-colors">
                 Forgot password?
@@ -734,9 +748,9 @@ export const AndroidCompact = (): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row-reverse">
+    <div className="h-[100dvh] flex flex-col md:flex-row-reverse">
       <motion.div 
-        className="w-full md:w-1/2 flex flex-col items-center justify-center px-6 py-12 bg-white"
+        className="w-full md:w-1/2 flex flex-col items-center justify-center px-6 py-12 bg-white overflow-auto"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
@@ -792,7 +806,7 @@ export const AndroidCompact = (): JSX.Element => {
           )}
 
           <motion.div className="space-y-8" variants={containerVariants}>
-            <div className="min-h-[340px]"> {/* Adjust this value based on your tallest step */}
+            <div className="min-h-[300px]"> 
               {renderStepContent()}
             </div>
 
