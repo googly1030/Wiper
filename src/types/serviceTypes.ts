@@ -10,6 +10,7 @@ export interface Service {
   frequency?: string;
   isMonthlyPlan?: boolean;
   image?: string;
+  vehicleType?: 'hatchback' | 'sedan' | 'suv' | 'luxury';
 }
 
 export interface UserCar {

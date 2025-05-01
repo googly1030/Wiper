@@ -101,7 +101,7 @@ export const AndroidCompact = (): JSX.Element => {
           password,
         });
         if (error) throw error;
-
+        localStorage.setItem('username', fullName);
         // Store session info in localStorage for quick access
         if (data.session) {
           localStorage.setItem(
@@ -701,7 +701,10 @@ export const AndroidCompact = (): JSX.Element => {
                     type="text"
                     required
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      localStorage.setItem('username', e.target.value);
+                    }}
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c5e82e] focus:border-transparent transition-all bg-gray-50 hover:bg-white"
                     placeholder="Enter your full name"
                   />

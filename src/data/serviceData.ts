@@ -22,7 +22,8 @@ export const monthlyPlans: Service[] = [
       'Window cleaning included'
     ],
     isMonthlyPlan: true,
-    image: HatchBack
+    image: HatchBack,
+    vehicleType: 'hatchback'  // Added vehicle type
   },
   {
     id: 'sedan-plan',
@@ -41,7 +42,8 @@ export const monthlyPlans: Service[] = [
       'Tire and rim care'
     ],
     isMonthlyPlan: true,
-    image: Sedan
+    image: Sedan,
+    vehicleType: 'sedan'  // Added vehicle type
   },
   {
     id: 'suv-plan',
@@ -60,7 +62,8 @@ export const monthlyPlans: Service[] = [
       'Extra attention to third row'
     ],
     isMonthlyPlan: true,
-    image: Suv
+    image: Suv,
+    vehicleType: 'suv'  // Added vehicle type
   },
   {
     id: 'premium-plan',
@@ -81,7 +84,8 @@ export const monthlyPlans: Service[] = [
       'Monthly paint protection'
     ],
     isMonthlyPlan: true,
-    image: Premium
+    image: Premium,
+    vehicleType: 'luxury'  // Added vehicle type - assuming the premium plan is for luxury vehicles
   }
 ];
 
