@@ -12,8 +12,10 @@ import {
   PhoneIcon,
   MailIcon
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Separator } from '../../components/ui/separator';
+
 
 interface UserProfile {
   id: string;
@@ -69,9 +71,24 @@ export const UserSettings = () => {
     navigate(`/profile?section=${section}`);
   };
 
-  const handleLogout = () => {
-    // Add your logout logic here
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+    
+      // Clear everything from localStorage
+      localStorage.clear();
+      
+      // Navigate to login page
+      navigate('/');
+      
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   // Page transition animation

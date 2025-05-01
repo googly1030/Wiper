@@ -90,6 +90,17 @@ export const Profile = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    // Get tab from URL query parameter
+    const queryParams = new URLSearchParams(location.search);
+    const sectionParam = queryParams.get('section');
+    
+    // If a valid section is specified in the URL, set it as active
+    if (sectionParam && ['profile', 'security', 'vehicles', 'history'].includes(sectionParam)) {
+      setActiveTab(sectionParam);
+    }
+  }, [location.search]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProfile(prev => ({ ...prev, [name]: value }));
