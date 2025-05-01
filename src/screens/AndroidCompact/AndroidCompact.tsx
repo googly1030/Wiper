@@ -540,104 +540,103 @@ export const AndroidCompact = (): JSX.Element => {
             </motion.div>
           );
 
-        case 2:
-          return (
-            <motion.div
-              className="space-y-5"
-              variants={slideVariants}
-              key="step2"
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <button
-                onClick={goToPrevStep}
-                className="flex items-center text-gray-500 hover:text-black transition-colors"
+          case 2:
+            return (
+              <motion.div
+                className="space-y-5"
+                variants={slideVariants}
+                key="step2"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                <span className="text-sm">Back</span>
-              </button>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-[#c5e82e] text-black flex items-center justify-center font-medium">
-                    2
-                  </div>
-                  <span className="ml-2 font-medium text-sm">Phone Number</span>
+                <div className="flex items-center mb-4">
+                  <button
+                    onClick={goToPrevStep}
+                    className="flex items-center text-gray-500 hover:text-black transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <span className="text-sm">Back</span>
+                  </button>
                 </div>
-                <div className="flex items-center">
-                  <div className="h-1 w-16 bg-gray-200 rounded-full">
-                    <div className="h-1 w-2/4 bg-[#c5e82e] rounded-full"></div>
+                
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-[#c5e82e] text-black flex items-center justify-center font-medium">
+                      2
+                    </div>
+                    <span className="ml-2 font-medium text-sm">Phone Number</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="h-1 w-16 bg-gray-200 rounded-full">
+                      <div className="h-1 w-2/4 bg-[#c5e82e] rounded-full"></div>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="relative">
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-gray-700 mb-1 ml-1"
-                >
-                  Phone Number
-                </label>
-                <div className="relative flex">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      className="h-[42px] inline-flex items-center px-4 border border-gray-300 rounded-l-lg bg-gray-50 text-gray-700 border-r-0"
-                      disabled
-                    >
-                      <span>+91</span>
-                    </button>
-                  </div>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    value={phoneNumber}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      if (value.length <= 10) {
-                        setPhoneNumber(value);
-                        if (value.length === 10) {
-                          setPhoneError("");
-                        } else if (value.length > 0) {
-                          setPhoneError("Phone number must be 10 digits");
-                        } else {
-                          setPhoneError("");
+  
+                <div className="relative">
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-gray-700 mb-1 ml-1"
+                  >
+                    Phone Number
+                  </label>
+                  <div className="flex">
+                    <div className="shrink-0">
+                      <div className="h-[42px] inline-flex items-center px-3 md:px-4 border border-gray-300 rounded-l-lg bg-gray-50 text-gray-700 border-r-0">
+                        <span className="text-sm font-medium">+91</span>
+                      </div>
+                    </div>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      required
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        if (value.length <= 10) {
+                          setPhoneNumber(value);
+                          if (value.length === 10) {
+                            setPhoneError("");
+                          } else if (value.length > 0) {
+                            setPhoneError("Phone number must be 10 digits");
+                          } else {
+                            setPhoneError("");
+                          }
                         }
-                      }
-                    }}
-                    onBlur={() => {
-                      if (phoneNumber && phoneNumber.length !== 10) {
-                        setPhoneError("Phone number must be 10 digits");
-                      }
-                    }}
-                    className={`h-[42px] w-full rounded-l-none border-l-0 border ${
+                      }}
+                      onBlur={() => {
+                        if (phoneNumber && phoneNumber.length !== 10) {
+                          setPhoneError("Phone number must be 10 digits");
+                        }
+                      }}
+                      className={`h-[42px] w-full rounded-l-none border-l-0 border ${
+                        phoneError
+                          ? "border-red-300 focus:ring-red-500"
+                          : "border-gray-300 focus:ring-[#c5e82e]"
+                      } rounded-r-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-gray-50 hover:bg-white`}
+                      placeholder="Enter your 10-digit phone number"
+                      maxLength={10}
+                      inputMode="numeric"
+                    />
+                  </div>
+                  {phoneError && (
+                    <p className="mt-1 text-sm text-red-600">{phoneError}</p>
+                  )}
+                  <motion.div
+                    className={`h-0.5 bg-gradient-to-r ${
                       phoneError
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-[#c5e82e]"
-                    } rounded-r-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-gray-50 hover:bg-white`}
-                    placeholder="Enter your 10-digit phone number"
-                    maxLength={10}
-                    inputMode="numeric"
+                        ? "from-red-400 to-red-500"
+                        : "from-[#c5e82e] to-[#a5c824]"
+                    } mt-0.5 rounded-full`}
+                    initial={{ width: 0 }}
+                    animate={{ width: phoneNumber ? "100%" : "0%" }}
+                    transition={{ duration: 0.3 }}
                   />
                 </div>
-                {phoneError && (
-                  <p className="mt-1 text-sm text-red-600">{phoneError}</p>
-                )}
-                <motion.div
-                  className={`h-0.5 bg-gradient-to-r ${
-                    phoneError
-                      ? "from-red-400 to-red-500"
-                      : "from-[#c5e82e] to-[#a5c824]"
-                  } mt-0.5 rounded-full`}
-                  initial={{ width: 0 }}
-                  animate={{ width: phoneNumber ? "100%" : "0%" }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-            </motion.div>
-          );
+              </motion.div>
+            );
 
         case 3:
           return (
