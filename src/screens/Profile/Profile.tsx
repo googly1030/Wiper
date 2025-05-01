@@ -51,19 +51,41 @@ export const Profile = () => {
   const [activeTab, setActiveTab] = useState<string>('profile');
   const [scrolled, setScrolled] = useState<boolean>(false);
   
-  // Hardcoded profile data
-  const [profile, setProfile] = useState<UserProfile>({
-    id: 'user-123456',
-    email: 'demo.user@example.com',
-    full_name: 'Demo User',
-    phone_number: '+1 (555) 123-4567',
-    address: '123 Main Street, City, Country',
-    occupation: 'Software Developer',
-    bio: 'I am a passionate software developer with experience in React, TypeScript, and modern web development frameworks.',
-    birth_date: '1990-01-15',
-    profile_image_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80',
-    created_at: '2023-01-01T00:00:00Z',
-    updated_at: '2023-03-15T00:00:00Z'
+  // Update the initial profile state to use localStorage data
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    try {
+      const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+
+      return {
+        id: userSession?.user?.id || '',
+        email: localStorage.getItem('userEmail') || userData.email || '',
+        full_name: localStorage.getItem('username') || userData.fullName || '',
+        phone_number: localStorage.getItem('userPhone') || userData.phoneNumber || '',
+        address: `${localStorage.getItem('userBlock') || ''} ${localStorage.getItem('userApartment') || ''}`.trim(),
+        occupation: null,
+        bio: null,
+        birth_date: null,
+        profile_image_url: null,
+        created_at: userData.createdAt || new Date().toISOString(),
+        updated_at: null
+      };
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      return {
+        id: '',
+        email: '',
+        full_name: '',
+        phone_number: '',
+        address: '',
+        occupation: null,
+        bio: null,
+        birth_date: null,
+        profile_image_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: null
+      };
+    }
   });
 
   // Success/error states for notifications
@@ -101,6 +123,31 @@ export const Profile = () => {
     }
   }, [location.search]);
 
+  // Add useEffect to update profile when localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+
+        setProfile(prev => ({
+          ...prev,
+          id: userSession?.user?.id || prev.id,
+          email: localStorage.getItem('userEmail') || userData.email || prev.email,
+          full_name: localStorage.getItem('username') || userData.fullName || prev.full_name,
+          phone_number: localStorage.getItem('userPhone') || userData.phoneNumber || prev.phone_number,
+          address: `${localStorage.getItem('userBlock') || ''} ${localStorage.getItem('userApartment') || ''}`.trim() || prev.address,
+          created_at: userData.createdAt || prev.created_at
+        }));
+      } catch (error) {
+        console.error('Error updating profile from localStorage:', error);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProfile(prev => ({ ...prev, [name]: value }));
@@ -111,10 +158,26 @@ export const Profile = () => {
     try {
       setUpdating(true);
       
-      // Mock update operation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save updates to localStorage
+      localStorage.setItem('username', profile.full_name);
+      localStorage.setItem('userEmail', profile.email);
+      localStorage.setItem('userPhone', profile.phone_number || '');
       
-      // Update the updated_at timestamp to simulate a real update
+      // Split address into block and apartment if needed
+      const addressParts = profile.address?.split(' ') || [];
+      if (addressParts.length >= 2) {
+        localStorage.setItem('userBlock', addressParts[0]);
+        localStorage.setItem('userApartment', addressParts.slice(1).join(' '));
+      }
+      
+      // Update userData object
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      userData.fullName = profile.full_name;
+      userData.email = profile.email;
+      userData.phoneNumber = profile.phone_number;
+      userData.updatedAt = new Date().toISOString();
+      localStorage.setItem('userData', JSON.stringify(userData));
+      
       setProfile(prev => ({
         ...prev,
         updated_at: new Date().toISOString()

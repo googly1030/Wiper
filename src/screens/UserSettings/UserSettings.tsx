@@ -24,17 +24,19 @@ interface UserProfile {
   phone_number: string | null;
   profile_image_url: string | null;
   created_at: string;
+  block?: string;
+  apartment?: string;
 }
 
 export const UserSettings = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<UserProfile>({
-    id: 'user-123456',
-    email: 'demo.user@example.com',
-    full_name: 'Demo User',
-    phone_number: '+1 (555) 123-4567',
-    profile_image_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
-    created_at: '2023-01-01T00:00:00Z',
+    id: '',
+    email: '',
+    full_name: '',
+    phone_number: '',
+    profile_image_url: null,
+    created_at: new Date().toISOString(),
   });
   const Avatar = ({ className, children }: { className?: string, children: React.ReactNode }) => (
     <div className={`relative rounded-full overflow-hidden ${className || ''}`}>{children}</div>
@@ -50,12 +52,29 @@ export const UserSettings = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
+    try {
+      // Get user session and data from localStorage
+      const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      
+      // Construct user profile from localStorage data
+      const userProfile: UserProfile = {
+        id: userSession?.user?.id || '',
+        email: localStorage.getItem('userEmail') || userData.email || '',
+        full_name: localStorage.getItem('username') || userData.fullName || '',
+        phone_number: localStorage.getItem('userPhone') || userData.phoneNumber || '',
+        profile_image_url: null, // You can add profile image handling if needed
+        created_at: userData.createdAt || new Date().toISOString(),
+        block: localStorage.getItem('userBlock') || userData.block || '',
+        apartment: localStorage.getItem('userApartment') || userData.apartmentNumber || ''
+      };
+
+      setUser(userProfile);
       setLoading(false);
-    }, 800);
-    
-    return () => clearTimeout(timer);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      setLoading(false);
+    }
   }, []);
 
   const getUserInitials = () => {
@@ -149,36 +168,57 @@ export const UserSettings = () => {
       
       {/* User Profile Summary Card */}
       <div className="px-4 py-8 bg-gradient-to-r from-gray-900 to-black shadow-md">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center gap-5">
-            <Avatar className="h-20 w-20 border-2 border-[#c5e82e] shadow-lg">
-              {user.profile_image_url ? (
-                <AvatarImage src={user.profile_image_url} alt={user.full_name} />
-              ) : (
-                <AvatarFallback className="bg-black text-white text-xl">
-                  {getUserInitials()}
-                </AvatarFallback>
-              )}
-            </Avatar>
-            
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-white">{user.full_name}</h2>
-              <div className="text-sm text-gray-300 flex flex-col gap-1.5 mt-2">
-                <div className="flex items-center gap-2">
-                  <MailIcon className="w-3.5 h-3.5 text-[#c5e82e]" />
-                  <span>{user.email}</span>
-                </div>
-                {user.phone_number && (
-                  <div className="flex items-center gap-2">
-                    <PhoneIcon className="w-3.5 h-3.5 text-[#c5e82e]" />
-                    <span>{user.phone_number}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+  <div className="max-w-md mx-auto">
+    <div className="flex items-center gap-5">
+      <Avatar className="h-20 w-20 border-2 border-[#c5e82e] shadow-lg">
+        {user.profile_image_url ? (
+          <AvatarImage src={user.profile_image_url} alt={user.full_name} />
+        ) : (
+          <AvatarFallback className="bg-black text-white text-xl">
+            {getUserInitials()}
+          </AvatarFallback>
+        )}
+      </Avatar>
+      
+      <div className="flex-1">
+        <h2 className="text-2xl font-bold text-white tracking-tight">{user.full_name}</h2>
+        
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center gap-2.5 bg-black/30 rounded-lg px-3 py-1.5">
+            <MailIcon className="w-4 h-4 text-[#c5e82e] flex-shrink-0" />
+            <span className="text-gray-200 text-sm font-medium truncate">{user.email}</span>
           </div>
+          
+          {user.phone_number && (
+            <div className="flex items-center gap-2.5 bg-black/30 rounded-lg px-3 py-1.5">
+              <PhoneIcon className="w-4 h-4 text-[#c5e82e] flex-shrink-0" />
+              <span className="text-gray-200 text-sm font-medium">{user.phone_number}</span>
+            </div>
+          )}
+          
+          {user.block && user.apartment && (
+            <div className="flex items-center gap-2.5 bg-black/30 rounded-lg px-3 py-1.5">
+              <svg 
+                className="w-4 h-4 text-[#c5e82e] flex-shrink-0" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" 
+                />
+              </svg>
+              <span className="text-gray-200 text-sm font-medium">{`Block ${user.block}, Apt ${user.apartment}`}</span>
+            </div>
+          )}
         </div>
       </div>
+    </div>
+  </div>
+</div>
       
       {/* Curved separator - similar to other pages */}
       <div className="relative -mt-4 z-10">

@@ -118,7 +118,29 @@ export const AndroidCompact = (): JSX.Element => {
 
         navigate("/services");
       } else {
-        // For signup, we complete all steps first then submit the data
+        // For signup, save all form data to localStorage
+        const userData = {
+          email,
+          fullName,
+          phoneNumber: countryCode + phoneNumber,
+          block,
+          apartmentNumber,
+          referralCode: referralCode || null,
+          createdAt: new Date().toISOString(),
+        };
+
+        // Save user data to localStorage
+        localStorage.setItem('userData', JSON.stringify(userData));
+        localStorage.setItem('username', fullName);
+        localStorage.setItem('userEmail', email);
+        localStorage.setItem('userPhone', countryCode + phoneNumber);
+        localStorage.setItem('userBlock', block);
+        localStorage.setItem('userApartment', apartmentNumber);
+        if (referralCode) {
+          localStorage.setItem('userReferral', referralCode);
+        }
+
+        // Continue with existing signup logic
         if (signupStep < 4) {
           goToNextStep();
           setLoading(false);
@@ -130,7 +152,7 @@ export const AndroidCompact = (): JSX.Element => {
           throw new Error("Passwords don't match");
         }
 
-        // Submit all signup data with auto-confirm enabled
+        // Submit signup data to Supabase
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -166,6 +188,11 @@ export const AndroidCompact = (): JSX.Element => {
                 user: {
                   id: signInData.session.user.id,
                   email: signInData.session.user.email,
+                  fullName,
+                  phone: countryCode + phoneNumber,
+                  block,
+                  apartmentNumber,
+                  referralCode: referralCode || null,
                 },
               })
             );
@@ -174,7 +201,6 @@ export const AndroidCompact = (): JSX.Element => {
           // Redirect to services page
           navigate("/services");
         } else {
-          // Handle edge case
           setIsLogin(true);
           setErrorMessage("Account created. Please sign in.");
         }
@@ -1068,7 +1094,7 @@ export const AndroidCompact = (): JSX.Element => {
                   htmlFor="apartment"
                   className="block text-sm font-medium text-gray-700 mb-1 ml-1"
                 >
-                  Apartment Number
+                  Apartment Name
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1095,7 +1121,7 @@ export const AndroidCompact = (): JSX.Element => {
                     value={apartmentNumber}
                     onChange={(e) => setApartmentNumber(e.target.value)}
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c5e82e] focus:border-transparent transition-all bg-gray-50 hover:bg-white"
-                    placeholder="Enter your apartment number"
+                    placeholder="Enter your apartment Name"
                   />
                 </div>
                 <motion.div
