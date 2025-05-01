@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
-import { Separator } from '../../components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../../components/Header';
 import { 
@@ -24,12 +21,10 @@ import {
   Clock3Icon,
   LockIcon,
   ClipboardIcon,
-  BadgeCheck,
   StarIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '../../components/CustomToast';
-import { CustomTextArea } from '../../components/CustomTextArea';
 import { Label } from '../../components/CustomLabel';
 import { Badge } from '../../components/ui/badge';
 

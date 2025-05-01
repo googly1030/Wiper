@@ -24,6 +24,7 @@ import { Badge } from "../../components/ui/badge";
 import { Separator } from "../../components/ui/separator";
 import { noCarHeroContent } from "../../data/heroContent";
 import Header from "../../components/Header";
+import MobileNavBar from "../../components/MobileNavBar";
 
 // Import static data from separated files
 import {
@@ -71,6 +72,8 @@ const ServicesList = () => {
   // Add this state to manage the modal
   const [showNoCarsModal, setShowNoCarsModal] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("User");
+  // Add a state for active tab that we'll pass to the MobileNavBar
+  const [activeTab, setActiveTab] = useState<string>("home");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -282,6 +285,11 @@ const ServicesList = () => {
     }
   };
 
+  // Add a function to handle adding a car
+  const handleAddCar = () => {
+    navigate("/add-car");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 flex items-center justify-center">
@@ -305,7 +313,7 @@ const ServicesList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-16 md:pb-0">
       {/* Header component in a fixed position */}
       <div
         className={`sticky top-0 z-40 transition-all duration-300 ${
@@ -441,16 +449,18 @@ const ServicesList = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button
-                    className="bg-[#c5e82e] hover:bg-[#d0f53a] text-black text-base sm:text-lg font-medium px-6 sm:px-8 py-5 sm:py-6 rounded-full"
-                    onClick={() =>
-                      navigate(
-                        userCar ? "/dashboard" : noCarHeroContent.ctaLink
-                      )
-                    }
-                  >
-                    {userCar ? "View Services" : noCarHeroContent.ctaText}
-                  </Button>
+<Button
+  className="bg-[#c5e82e] hover:bg-[#d0f53a] text-black font-medium rounded-full
+    text-sm px-4 py-2.5 
+    sm:text-lg sm:px-6 sm:px-8 sm:py-5 sm:py-6"
+  onClick={() =>
+    navigate(
+      userCar ? "/dashboard" : noCarHeroContent.ctaLink
+    )
+  }
+>
+  {userCar ? "View Dashboard" : noCarHeroContent.ctaText}
+</Button>
                 </motion.div>
               </motion.div>
             </div>
@@ -1003,6 +1013,22 @@ const ServicesList = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Add Mobile Navigation Bar at the bottom */}
+      <MobileNavBar 
+        activeTab={activeTab}
+        setActiveTab={(tab) => {
+          if (tab === "dashboard") {
+            navigate("/dashboard");
+          } else if (tab === "plans") {
+            navigate("/dashboard", { state: { initialTab: "plans" } });
+          } else if (tab === "car") {
+            navigate("/dashboard", { state: { initialTab: "car" } });
+          }
+        }}
+        onAddCarClick={handleAddCar}
+        hasActiveCar={!!userCar}
+      />
 
       {/* Add a CSS class to hide scrollbars but keep functionality */}
       <style jsx global>{`
