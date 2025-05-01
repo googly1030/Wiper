@@ -13,7 +13,6 @@ import { Separator } from "../../components/ui/separator";
 import {
   CarIcon,
   PlusIcon,
-  WrenchIcon,
   DropletIcon,
   CheckCircleIcon,
   ShieldCheckIcon,
@@ -21,19 +20,20 @@ import {
   CalendarIcon,
   HomeIcon,
   TrendingUpIcon,
-  CheckIcon,
   HelpCircleIcon as QuestionMarkCircleIcon,
   CameraIcon,
   HistoryIcon,
   Trash2Icon,
   Pencil,
-  Wrench as ToolIcon,
   ClipboardCheck as ClipboardIcon,
+  Check as CheckIcon,
 } from "lucide-react";
 import Header from "../../components/Header";
 import { format, addDays } from "date-fns";
 import { motion } from "framer-motion";
 import { monthlyPlans } from "../../data/serviceData";
+import MobileNavBar from "../../components/MobileNavBar";
+import { wiperUpdates } from "../../data/wiperUpdatesData";
 
 interface User {
   email?: string;
@@ -87,19 +87,17 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
-  // Change the interface to handle multiple cars
   const [userCars, setUserCars] = useState<UserCar[]>([]);
   const [activeCar, setActiveCar] = useState<UserCar | null>(null);
   const [hasSubscription, setHasSubscription] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
-  // Update your state initialization to check for the activeTab in location state
   const [activeTab, setActiveTab] = useState(
     location.state?.activeTab || "dashboard"
   );
   const [recommendedServices, setRecommendedServices] = useState<any[]>([]);
   const [bookedPlans, setBookedPlans] = useState<BookedPlan[]>([]);
   const [username, setUsername] = useState<string>("User");
-
+  const [showAllUpdates, setShowAllUpdates] = useState<boolean>(false);
   // Update the Plan interface to include more fields
   const plans: Plan[] = monthlyPlans.map((plan) => ({
     id: plan.id,
@@ -356,7 +354,7 @@ export const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-tr from-gray-50 to-gray-100 pb-16 md:pb-0">
       {/* Header */}
       <Header />
 
@@ -365,7 +363,9 @@ export const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Welcome, {username}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold">
+                Welcome, {username}
+              </h1>
               <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-300">
                 {hasSubscription
                   ? "Your car deserves the best care. Check out your dashboard below."
@@ -392,15 +392,16 @@ export const Dashboard = () => {
                 onClick={handleAddCar}
                 className="mt-4 md:mt-0 bg-white text-black hover:bg-gray-100 rounded-full text-sm py-1.5 px-3 sm:py-2 sm:px-4"
               >
-                <PlusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Add Your Car
+                <PlusIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Add
+                Your Car
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs - No Scroll on Mobile */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-4">
+      {/* REMOVE THE NAVIGATION TABS FOR MOBILE - ONLY SHOW ON TABLET AND ABOVE */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-4 hidden md:block">
         <div className="grid grid-cols-3 border-b">
           <button
             className={`pb-2 sm:pb-3 px-1 sm:px-3 font-medium text-center whitespace-nowrap flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 ${
@@ -574,7 +575,9 @@ export const Dashboard = () => {
                         <div className="bg-gray-50 p-3 sm:p-4 rounded-xl">
                           <div className="flex items-center mb-2 sm:mb-3">
                             <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 mr-1.5 sm:mr-2" />
-                            <h4 className="font-bold text-sm sm:text-base">Schedule</h4>
+                            <h4 className="font-bold text-sm sm:text-base">
+                              Schedule
+                            </h4>
                           </div>
                           <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-700">
                             <div className="flex justify-between">
@@ -604,7 +607,9 @@ export const Dashboard = () => {
                         <div className="bg-gray-50 p-3 sm:p-4 rounded-xl">
                           <div className="flex items-center mb-2 sm:mb-3">
                             <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 mr-1.5 sm:mr-2" />
-                            <h4 className="font-bold text-sm sm:text-base">Included Services</h4>
+                            <h4 className="font-bold text-sm sm:text-base">
+                              Included Services
+                            </h4>
                           </div>
                           <ul className="text-xs sm:text-sm space-y-0.5 sm:space-y-1">
                             {bookedPlans[0].features
@@ -801,7 +806,9 @@ export const Dashboard = () => {
                       <CardContent className="p-4 sm:p-6 flex flex-col flex-grow">
                         <div>
                           <div className="flex justify-between items-start mb-1 sm:mb-2">
-                            <div className="text-base sm:text-xl font-bold">{plan.name}</div>
+                            <div className="text-base sm:text-xl font-bold">
+                              {plan.name}
+                            </div>
                             {isCurrentPlan && (
                               <Badge className="bg-[#c5e82e] text-black px-1.5 sm:px-2 py-0.5 text-xs font-semibold whitespace-nowrap">
                                 Current Plan
@@ -818,7 +825,9 @@ export const Dashboard = () => {
                             <span className="text-xl sm:text-3xl font-bold">
                               ₹{plan.price.toLocaleString("en-IN")}
                             </span>
-                            <span className="text-gray-600 ml-1 sm:ml-2 text-xs sm:text-sm">/month</span>
+                            <span className="text-gray-600 ml-1 sm:ml-2 text-xs sm:text-sm">
+                              /month
+                            </span>
                           </div>
 
                           {plan.description && (
@@ -920,7 +929,7 @@ export const Dashboard = () => {
                 );
               })}
             </div>
-            
+
             {/* Rest of the plans tab with mobile improvements */}
             <div className="bg-white rounded-2xl p-8 mt-12 border border-gray-100 shadow-sm">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -960,8 +969,8 @@ export const Dashboard = () => {
                       Need help with your subscription?
                     </p>
                     <p className="text-sm mt-1">
-                      Our customer service team is available 24/7 to assist
-                      you with any questions about your plan.
+                      Our customer service team is available 24/7 to assist you
+                      with any questions about your plan.
                     </p>
                   </div>
                 </div>
@@ -970,222 +979,294 @@ export const Dashboard = () => {
           </div>
         )}
 
-{activeTab === "car" && (
-  <div className="space-y-6 sm:space-y-8">
-    {/* Header with responsive spacing and font sizes */}
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
-      <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-1.5 sm:gap-2">
-        <CarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#c5e82e]" />
-        <span>My Vehicles</span>
-      </h2>
+        {activeTab === "car" && (
+          <div className="space-y-6 sm:space-y-8">
+            {/* Header with responsive spacing and font sizes */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-1.5 sm:gap-2">
+                <CarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#c5e82e]" />
+                <span>My Vehicles</span>
+              </h2>
 
-      <Button
-        onClick={handleAddCar}
-        className="bg-black text-white hover:bg-gray-800 rounded-full border-b-2 border-[#c5e82e] text-sm py-1.5 px-4 sm:py-2 sm:px-5 w-full sm:w-auto"
-      >
-        <PlusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" /> 
-        Add Vehicle
-      </Button>
-    </div>
-
-    {userCars.length > 0 ? (
-      <div className="space-y-5 sm:space-y-6">
-        {/* Car selection tabs with horizontal scrolling on small screens */}
-        {userCars.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-300">
-            {userCars.map((car) => (
               <Button
-                key={car.id}
-                variant={activeCar?.id === car.id ? "default" : "outline"}
-                className={`rounded-full flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm py-1 px-3 sm:py-1.5 sm:px-4 h-auto ${
-                  activeCar?.id === car.id
-                    ? "bg-[#c5e82e] text-black"
-                    : ""
-                }`}
-                onClick={() => setActiveCar(car)}
+                onClick={handleAddCar}
+                className="bg-black text-white hover:bg-gray-800 rounded-full border-b-2 border-[#c5e82e] text-sm py-1.5 px-4 sm:py-2 sm:px-5 w-full sm:w-auto"
               >
-                <CarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                {car.make} {car.model}
+                <PlusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                Add Vehicle
               </Button>
-            ))}
-          </div>
-        )}
-
-        {/* Display active car details with responsive layout */}
-        {activeCar && (
-          <Card className="overflow-hidden border-0 rounded-xl sm:rounded-2xl shadow-lg">
-            <div className="bg-gradient-to-r from-gray-900 to-black p-4 sm:p-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg sm:text-xl font-bold text-white">
-                  {userCars.length > 1 ? "Selected Vehicle" : "Primary Vehicle"}
-                </h3>
-                <Badge className="bg-[#c5e82e] text-black text-xs">
-                  Active
-                </Badge>
-              </div>
             </div>
 
-            <CardContent className="p-0">
-              <div className="p-4 sm:p-6 flex flex-col md:flex-row gap-5 sm:gap-6">
-                {/* Car image section with responsive width */}
-                <div className="w-full md:w-1/3">
-                  <div className="bg-gray-100 rounded-lg sm:rounded-xl h-48 sm:h-64 flex items-center justify-center">
-                    <div className="bg-gray-200 p-3 sm:p-4 rounded-full">
-                      <CarIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400" />
-                    </div>
+            {userCars.length > 0 ? (
+              <div className="space-y-5 sm:space-y-6">
+                {/* Car selection tabs with horizontal scrolling on small screens */}
+                {userCars.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-gray-300">
+                    {userCars.map((car) => (
+                      <Button
+                        key={car.id}
+                        variant={
+                          activeCar?.id === car.id ? "default" : "outline"
+                        }
+                        className={`rounded-full flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm py-1 px-3 sm:py-1.5 sm:px-4 h-auto ${
+                          activeCar?.id === car.id
+                            ? "bg-[#c5e82e] text-black"
+                            : ""
+                        }`}
+                        onClick={() => setActiveCar(car)}
+                      >
+                        <CarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        {car.make} {car.model}
+                      </Button>
+                    ))}
                   </div>
-                  <div className="flex justify-center mt-3 sm:mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full text-xs h-7 sm:h-8 px-3 sm:px-4"
-                    >
-                      <CameraIcon className="w-3 h-3 mr-1.5" />
-                      Upload Photo
-                    </Button>
-                  </div>
-                </div>
+                )}
 
-                {/* Car details section */}
-                <div className="w-full md:w-2/3">
-                  <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    {activeCar.year} {activeCar.make} {activeCar.model}
-                    <Badge className="bg-gray-100 text-gray-700 text-xs mt-1 sm:mt-0">
-                      {activeCar.size.charAt(0).toUpperCase() + activeCar.size.slice(1)}
-                    </Badge>
-                  </h3>
-
-                  {/* Grid for car details with responsive columns */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-                    <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
-                      <p className="text-xs sm:text-sm text-gray-500">Make</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="font-medium text-sm sm:text-base">{activeCar.make}</p>
+                {/* Display active car details with responsive layout */}
+                {activeCar && (
+                  <Card className="overflow-hidden border-0 rounded-xl sm:rounded-2xl shadow-lg">
+                    <div className="bg-gradient-to-r from-gray-900 to-black p-4 sm:p-6">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg sm:text-xl font-bold text-white">
+                          {userCars.length > 1
+                            ? "Selected Vehicle"
+                            : "Primary Vehicle"}
+                        </h3>
+                        <Badge className="bg-[#c5e82e] text-black text-xs">
+                          Active
+                        </Badge>
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
-                      <p className="text-xs sm:text-sm text-gray-500">License Plate</p>
-                      <p className="font-medium text-sm sm:text-base mt-1">
-                        {activeCar.plate_number || "Not provided"}
-                      </p>
-                    </div>
+                    <CardContent className="p-0">
+                      <div className="p-4 sm:p-6 flex flex-col md:flex-row gap-5 sm:gap-6">
+                      <div className="w-full md:w-1/3">
+                        <div className="bg-gray-100 rounded-lg sm:rounded-xl h-48 sm:h-64 overflow-hidden">
+                          <img 
+                        src="https://images.unsplash.com/photo-1553440569-bcc63803a83d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600&q=85"
+                            alt="Car preview" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to icon if image fails to load
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                              const fallback = document.createElement('div');
+                              fallback.className = 'bg-gray-200 p-3 sm:p-4 rounded-full';
+                              fallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12 sm:w-16 sm:h-16 text-gray-400"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C1.4 11.3 1 12.1 1 13v3c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>`;
+                              e.currentTarget.parentElement?.appendChild(fallback);
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-center mt-3 sm:mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full text-xs h-7 sm:h-8 px-3 sm:px-4"
+                          >
+                            <CameraIcon className="w-3 h-3 mr-1.5" />
+                            Upload Photo
+                          </Button>
+                        </div>
+                      </div>
 
-                    <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
-                      <p className="text-xs sm:text-sm text-gray-500">Recommended Service</p>
-                      <p className="font-medium text-sm sm:text-base mt-1">
-                        {activeCar.size === "suv"
-                          ? "Deep Clean Package"
-                          : activeCar.size === "small"
-                          ? "Compact Wash"
-                          : "Standard Exterior Wash"}
-                      </p>
-                    </div>
+                        {/* Car details section */}
+                        <div className="w-full md:w-2/3">
+                          <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            {activeCar.year} {activeCar.make} {activeCar.model}
+                            <Badge className="bg-gray-100 text-gray-700 text-xs mt-1 sm:mt-0">
+                              {activeCar.size.charAt(0).toUpperCase() +
+                                activeCar.size.slice(1)}
+                            </Badge>
+                          </h3>
 
-                    <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
-                      <p className="text-xs sm:text-sm text-gray-500">Next Service</p>
-                      <p className="font-medium text-sm sm:text-base mt-1">
-                        {bookedPlans.length > 0
-                          ? format(new Date(bookedPlans[0].nextServiceDate), "MMM d, yyyy")
-                          : "No service scheduled"}
-                      </p>
-                    </div>
-                  </div>
+                          {/* Grid for car details with responsive columns */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+                            <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                Make
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="font-medium text-sm sm:text-base">
+                                  {activeCar.make}
+                                </p>
+                              </div>
+                            </div>
 
-                  {/* Action buttons with better mobile layout */}
-                  <div className="flex flex-wrap gap-2 sm:gap-3">
-                    <Button className="bg-black text-white hover:bg-gray-800 text-xs sm:text-sm h-8 sm:h-9 px-3 sm:px-4">
-                      <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                      Edit Vehicle
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="text-xs sm:text-sm h-8 sm:h-9 px-3 sm:px-4"
-                    >
-                      <HistoryIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                      Service History
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="text-red-600 hover:bg-red-50 hover:text-red-700 text-xs sm:text-sm h-8 sm:h-9 px-3 sm:px-4"
-                    >
-                      <Trash2Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                      Remove
-                    </Button>
-                  </div>
-                </div>
+                            <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                License Plate
+                              </p>
+                              <p className="font-medium text-sm sm:text-base mt-1">
+                                {activeCar.plate_number || "Not provided"}
+                              </p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                Recommended Service
+                              </p>
+                              <p className="font-medium text-sm sm:text-base mt-1">
+                                {activeCar.size === "suv"
+                                  ? "Deep Clean Package"
+                                  : activeCar.size === "small"
+                                  ? "Compact Wash"
+                                  : "Standard Exterior Wash"}
+                              </p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                              <p className="text-xs sm:text-sm text-gray-500">
+                                Next Service
+                              </p>
+                              <p className="font-medium text-sm sm:text-base mt-1">
+                                {bookedPlans.length > 0
+                                  ? format(
+                                      new Date(bookedPlans[0].nextServiceDate),
+                                      "MMM d, yyyy"
+                                    )
+                                  : "No service scheduled"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between w-full gap-3 sm:gap-4">
+                        <Button 
+                          className="bg-black text-white hover:bg-gray-800 text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4 flex-1"
+                        >
+                          <Pencil className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5 mr-1.5 sm:mr-2" />
+                          Edit Vehicle
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4 flex-1"
+                        >
+                          <Trash2Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                          Remove
+                        </Button>
+                      </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Wiper Updates Section with responsive spacing */}
+                      <div className="p-4 sm:p-6">
+                        <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+                          <HistoryIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#c5e82e]" />
+                          Wiper Updates
+                        </h4>
+
+                        <div className="space-y-4 sm:space-y-5">
+                          {/* Show only the first 2 updates initially */}
+                          {wiperUpdates
+                            .slice(0, showAllUpdates ? wiperUpdates.length : 2)
+                            .map((update) => (
+                              <div
+                                key={update.id}
+                                className="bg-white border rounded-xl p-3 sm:p-4 hover:shadow-sm transition-shadow"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="relative flex-shrink-0">
+                                    <img
+                                      src={update.profileImg}
+                                      alt={update.wiperName}
+                                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-gray-100"
+                                    />
+                                    <div className="absolute -bottom-1 -right-1 bg-[#c5e82e] p-0.5 rounded-full border-2 border-white">
+                                      <CheckIcon className="w-3 h-3 text-black" />
+                                    </div>
+                                  </div>
+                                  <div className="flex-grow">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <h5 className="font-medium text-sm sm:text-base">
+                                        {update.wiperName}
+                                      </h5>
+                                      <div className="text-xs text-gray-500 whitespace-nowrap">
+                                        {update.date} • {update.day} •{" "}
+                                        {update.time}
+                                      </div>
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-1.5">
+                                      {update.message}
+                                    </p>
+
+                                    <div className="flex flex-wrap items-center justify-between mt-2 sm:mt-3 gap-2">
+                                      <div className="flex items-center">
+                                        <Badge className="bg-green-100 text-green-800 text-xs">
+                                          {update.status}
+                                        </Badge>
+                                        <span className="mx-2 text-gray-300">
+                                          •
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                          {update.serviceType}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 rounded-full text-xs text-gray-500"
+                                      >
+                                        View Details
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* Only show the "View All Updates" button if there are more than 2 updates */}
+                        {wiperUpdates.length > 2 && (
+                          <Button
+                            variant="outline"
+                            className="w-full mt-4 sm:mt-5 text-gray-600 text-xs sm:text-sm h-8 sm:h-9 rounded-lg border-dashed"
+                            onClick={() => setShowAllUpdates(!showAllUpdates)}
+                          >
+                            {showAllUpdates
+                              ? "Show Less"
+                              : `View All Updates (${
+                                  wiperUpdates.length - 2
+                                } more)`}
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-
-              <Separator />
-
-              {/* Service history section with responsive spacing */}
-              <div className="p-4 sm:p-6">
-                <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
-                  <HistoryIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#c5e82e]" />
-                  Recent Services
-                </h4>
-
-                <div className="space-y-3 sm:space-y-4">
-                  {[1, 2, 3].map((item) => (
-                    <div
-                      key={item}
-                      className="flex justify-between items-center border-b pb-3 sm:pb-4 last:border-0"
-                    >
-                      <div className="flex gap-3 sm:gap-4">
-                        <div className="bg-gray-100 p-1.5 sm:p-2 rounded-lg">
-                          <DropletIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm sm:text-base">
-                            {["Full Exterior Wash", "Premium Detailing", "Quick Clean"][item % 3]}
-                          </div>
-                          <div className="text-xs sm:text-sm text-gray-500">
-                            April {20 + item}, 2025
-                          </div>
-                        </div>
-                      </div>
-                      <Badge className="bg-green-100 text-green-800 text-xs whitespace-nowrap">
-                        Completed
-                      </Badge>
-                    </div>
-                  ))}
+            ) : (
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-6 sm:p-8 text-center">
+                <div className="bg-[#c5e82e]/10 w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-5 sm:mb-6">
+                  <CarIcon className="w-10 h-10 sm:w-12 sm:h-12 text-[#c5e82e]" />
                 </div>
-
+                <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3">
+                  No vehicles added yet
+                </h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto">
+                  Add your vehicle details so we can provide personalized
+                  washing services tailored to your car
+                </p>
                 <Button
-                  variant="ghost"
-                  className="w-full mt-3 sm:mt-4 text-gray-600 text-xs sm:text-sm h-8 sm:h-9"
+                  onClick={handleAddCar}
+                  className="bg-black text-white hover:bg-gray-800 px-6 py-2 sm:px-8 sm:py-4 rounded-full border-b-2 border-[#c5e82e] text-sm sm:text-base"
                 >
-                  View All History
+                  <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />{" "}
+                  Add Your Car
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         )}
-
-      </div>
-    ) : (
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-6 sm:p-8 text-center">
-        <div className="bg-[#c5e82e]/10 w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-5 sm:mb-6">
-          <CarIcon className="w-10 h-10 sm:w-12 sm:h-12 text-[#c5e82e]" />
-        </div>
-        <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3">
-          No vehicles added yet
-        </h3>
-        <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto">
-          Add your vehicle details so we can provide personalized
-          washing services tailored to your car
-        </p>
-        <Button
-          onClick={handleAddCar}
-          className="bg-black text-white hover:bg-gray-800 px-6 py-2 sm:px-8 sm:py-4 rounded-full border-b-2 border-[#c5e82e] text-sm sm:text-base"
-        >
-          <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" /> Add Your Car
-        </Button>
-      </div>
-    )}
-  </div>
-)}
       </main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileNavBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onAddCarClick={handleAddCar}
+        hasActiveCar={!!activeCar}
+      />
     </div>
   );
 };

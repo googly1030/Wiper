@@ -61,14 +61,7 @@ const Header = () => {
     };
   }, []);
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
+
 
   const getUserInitials = () => {
     if (!user) return "U";
@@ -85,20 +78,6 @@ const Header = () => {
     return "U";
   };
 
-  const getUserDisplayName = () => {
-    if (!user) return "User";
-    if (user.user_metadata?.name) {
-      return user.user_metadata.name;
-    }
-    if (user.email) {
-      return user.email.split('@')[0];
-    }
-    return "User";
-  };
-
-  const toggleProfileDropdown = () => {
-    setShowProfileDropdown(!showProfileDropdown);
-  };
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -123,15 +102,12 @@ const Header = () => {
               src="/group-47.png"
             />
           </div>
-
-          {/* Only show profile dropdown if not on add-car page */}
           {!isAddCarPage && (
             <div className="flex items-center space-x-4">
               <div className="relative" ref={profileDropdownRef}>
-                {/* Existing dropdown code */}
                 <div 
                   className="flex items-center cursor-pointer"
-                  onClick={toggleProfileDropdown}
+                  onClick={() => navigate('/user-settings')} // Changed from '/profile' to '/user-settings'
                 >
                   <motion.div 
                     whileHover={{ scale: 1.05 }}
@@ -139,57 +115,7 @@ const Header = () => {
                   >
                     {getUserInitials()}
                   </motion.div>
-                  <ChevronDownIcon className="h-4 w-4 ml-1 text-gray-500" />
                 </div>
-                
-                <AnimatePresence>
-                  {showProfileDropdown && (
-                    <motion.div 
-                      className="absolute right-0 mt-2 w-60 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                      variants={dropdownVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                    >
-                      {/* Dropdown content - unchanged */}
-                      <div className="p-4 border-b border-gray-100">
-                        <div className="font-medium text-gray-900">{getUserDisplayName()}</div>
-                        <div className="text-sm text-gray-500 truncate">{user?.email}</div>
-                      </div>
-                      <div className="py-1">
-                        {/* Dropdown menu items - unchanged */}
-                        <button 
-                          className="flex w-full items-center px-4 py-3 text-sm hover:bg-gray-50 gap-3"
-                          onClick={() => {
-                            setShowProfileDropdown(false);
-                            navigate('/dashboard');
-                          }}
-                        >
-                          <HomeIcon className="h-4 w-4 text-gray-500" />
-                          Dashboard
-                        </button>
-                        <button 
-                          className="flex w-full items-center px-4 py-3 text-sm hover:bg-gray-50 gap-3"
-                          onClick={() => {
-                            setShowProfileDropdown(false);
-                            navigate('/profile');
-                          }}
-                        >
-                          <UserIcon className="h-4 w-4 text-gray-500" />
-                          My Profile
-                        </button>
-                        <Separator className="my-1" />
-                        <button 
-                          className="flex w-full items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 gap-3"
-                          onClick={handleSignOut}
-                        >
-                          <LogOutIcon className="h-4 w-4" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
           )}
