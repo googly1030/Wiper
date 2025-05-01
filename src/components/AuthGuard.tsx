@@ -129,10 +129,10 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  if (authenticated && !hasCar && location.pathname !== '/add-car') {
-    console.log('🔄 Redirecting to add-car page');
-    return <Navigate to="/add-car" replace />;
-  }
+  // if (authenticated && !hasCar && location.pathname !== '/add-car') {
+  //   console.log('🔄 Redirecting to add-car page');
+  //   return <Navigate to="/add-car" replace />;
+  // }
 
   console.log('✅ Rendering protected content');
   return <>{children}</>;
