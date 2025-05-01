@@ -10,6 +10,7 @@ import { AuthGuard } from "./components/AuthGuard";
 import { LoginGuard } from "./components/LoginGuard"; 
 import PlanSelection from "./screens/PlanSelection/PlanSelection"; // Remove curly braces
 import { Profile } from "./screens/Profile/Profile";
+import { UserSettings } from "./screens/UserSettings/UserSettings";
 import "./index.css";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
@@ -23,6 +24,11 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           </LoginGuard>
         } />
         <Route path="/auth/callback" element={<EmailConfirmation />} />
+        <Route path="/user-settings" element={
+          <AuthGuard>
+            <UserSettings />
+          </AuthGuard>
+        } />
         <Route path="/dashboard" element={
           <AuthGuard>
             <Dashboard />

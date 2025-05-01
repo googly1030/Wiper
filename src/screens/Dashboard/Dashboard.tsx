@@ -159,34 +159,8 @@ export const Dashboard = () => {
             const parsedPlans = JSON.parse(storedPlans);
             setBookedPlans(parsedPlans);
           } else {
-            // Fallback to mock plans if nothing in localStorage
-            const mockPlans: BookedPlan[] = activeCar
-              ? [
-                  {
-                    id: "plan-1",
-                    name: "Premium Monthly Plan",
-                    startDate: "2025-04-15",
-                    daysOfWeek: [1, 3, 5], // Mon, Wed, Fri
-                    timeSlots: ["10:00 AM - 11:30 AM"],
-                    features: [
-                      "6 exterior washes per week",
-                      "2 interior cleanings per month",
-                      "Priority scheduling",
-                      "Slot based on your selection",
-                      "Daily updates with photos",
-                    ],
-                    nextServiceDate: format(
-                      addDays(new Date(), 1),
-                      "yyyy-MM-dd"
-                    ),
-                    completedServices: 8,
-                    totalServices: 24,
-                    price: 5999,
-                  },
-                ]
-              : [];
-
-            setBookedPlans(mockPlans);
+            // Don't add mock plans, just set an empty array
+            setBookedPlans([]);
           }
         } catch (error) {
           console.error("Error loading booked plans from localStorage:", error);
@@ -726,47 +700,64 @@ export const Dashboard = () => {
         {activeTab === "plans" && (
           <div className="space-y-6 sm:space-y-8">
             {/* Show active plan banner if user has an active plan */}
-            {bookedPlans.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white shadow-md rounded-xl border border-[#c5e82e]/30 p-4 sm:p-6 mb-6 sm:mb-8"
-              >
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="bg-[#c5e82e]/20 p-2 sm:p-3 rounded-full">
-                      <CheckCircleIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[#c5e82e]" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg sm:text-xl font-bold">
-                          {bookedPlans[0].name}
-                        </h3>
-                        <Badge className="bg-[#c5e82e] text-black text-xs">
-                          Active
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        You're currently subscribed to our{" "}
-                        {bookedPlans[0].name.split(" ")[0]} plan until{" "}
-                        {format(
-                          addDays(new Date(bookedPlans[0].startDate), 30),
-                          "MMM d, yyyy"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="border-[#c5e82e] text-black hover:bg-[#c5e82e]/10 rounded-full text-sm py-1.5 px-3 h-8"
-                    onClick={() => setActiveTab("dashboard")}
-                  >
-                    View Plan Details
-                  </Button>
+            <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white shadow-md rounded-xl border border-[#c5e82e]/30 p-4 sm:p-6 mb-6 sm:mb-8"
+    >
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
+        {bookedPlans.length > 0 ? (
+          <>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="bg-[#c5e82e]/20 p-2 sm:p-3 rounded-full">
+                <CheckCircleIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[#c5e82e]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg sm:text-xl font-bold">
+                    {bookedPlans[0].name}
+                  </h3>
+                  <Badge className="bg-[#c5e82e] text-black text-xs">
+                    Active
+                  </Badge>
                 </div>
-              </motion.div>
-            )}
-
+                <p className="text-sm text-gray-600">
+                  You're currently subscribed to our{" "}
+                  {bookedPlans[0].name.split(" ")[0]} plan until{" "}
+                  {format(
+                    addDays(new Date(bookedPlans[0].startDate), 30),
+                    "MMM d, yyyy"
+                  )}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="border-[#c5e82e] text-black hover:bg-[#c5e82e]/10 rounded-full text-sm py-1.5 px-3 h-8"
+              onClick={() => setActiveTab("dashboard")}
+            >
+              View Plan Details
+            </Button>
+          </>
+        ) : (
+          <div className="w-full flex items-center justify-between">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="bg-gray-100 p-2 sm:p-3 rounded-full">
+                <ClipboardIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
+              </div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-700">
+                  No Active Plan
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Choose a subscription plan to get started with our services
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
             <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
               <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-4">
                 {bookedPlans.length > 0
@@ -812,11 +803,6 @@ export const Dashboard = () => {
                             {isCurrentPlan && (
                               <Badge className="bg-[#c5e82e] text-black px-1.5 sm:px-2 py-0.5 text-xs font-semibold whitespace-nowrap">
                                 Current Plan
-                              </Badge>
-                            )}
-                            {!isCurrentPlan && plan.popular && (
-                              <Badge className="bg-gray-100 text-gray-700 px-1.5 sm:px-2 py-0.5 text-xs font-semibold whitespace-nowrap">
-                                Popular
                               </Badge>
                             )}
                           </div>
@@ -916,10 +902,6 @@ export const Dashboard = () => {
                           {isCurrentPlan ? (
                             <p className="text-center text-xs text-gray-500 mt-2 sm:mt-3">
                               Your active subscription
-                            </p>
-                          ) : plan.popular ? (
-                            <p className="text-center text-xs text-gray-500 mt-2 sm:mt-3">
-                              30-day satisfaction guarantee
                             </p>
                           ) : null}
                         </div>
