@@ -12,6 +12,7 @@ import PlanSelection from "./screens/PlanSelection/PlanSelection"; // Remove cur
 import { Profile } from "./screens/Profile/Profile";
 import { UserSettings } from "./screens/UserSettings/UserSettings";
 import { WiperProfileSetup } from "./screens/WiperProfileSetup/WiperProfileSetup";
+import {WiperJobBooking} from "./screens/WiperJobBooking/WiperJobBooking";
 import "./index.css";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
@@ -48,6 +49,10 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           </AuthGuard>
         } />
         <Route path="/wiper-profile-setup" element={<WiperProfileSetup />} />
+        <Route path="/wiper-job-bookings" element={
+
+            <WiperJobBooking />
+        } />
       </Routes>
     </Router>
   </StrictMode>
