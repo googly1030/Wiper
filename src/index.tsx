@@ -11,6 +11,7 @@ import { LoginGuard } from "./components/LoginGuard";
 import PlanSelection from "./screens/PlanSelection/PlanSelection"; // Remove curly braces
 import { Profile } from "./screens/Profile/Profile";
 import { UserSettings } from "./screens/UserSettings/UserSettings";
+import { WiperProfileSetup } from "./screens/WiperProfileSetup/WiperProfileSetup";
 import "./index.css";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
@@ -46,6 +47,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             <Profile />
           </AuthGuard>
         } />
+        <Route path="/wiper-profile-setup" element={<WiperProfileSetup />} />
       </Routes>
     </Router>
   </StrictMode>
