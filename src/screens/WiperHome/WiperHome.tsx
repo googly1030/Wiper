@@ -25,6 +25,7 @@ import {
 import { toast } from "../../components/CustomToast";
 // Import service data
 import { monthlyPlans } from "../../data/serviceData";
+import WiperNavigation from "../../components/WiperNavigation";
 
 // Interface for job/booking data - updated to include service details
 interface JobBooking {
@@ -343,9 +344,6 @@ export const WiperHome = () => {
           </Button>
         </div>
       </div>
-      <Button variant="ghost" size="sm" onClick={navigateToJobBooking}>
-        View All Bookings <ArrowRight className="w-4 h-4 ml-1" />
-      </Button>
     </div>
     
     {/* Horizontal scrolling calendar */}
@@ -475,6 +473,21 @@ export const WiperHome = () => {
         </div>
       </div>
     )}
+    
+    {/* Move the button to the end of the calendar card instead */}
+    {/* Add this after the selected date preview section but before closing the CardContent */}
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={navigateToJobBooking}
+        className="w-full py-2.5 flex items-center justify-center border-[#c5e82e] text-black hover:bg-[#c5e82e]/10"
+      >
+        <Calendar className="w-4 h-4 mr-2 text-[#c5e82e]" />
+        View All Bookings
+        <ArrowRight className="w-4 h-4 ml-1" />
+      </Button>
+    </div>
   </CardContent>
 </Card>
 
@@ -552,7 +565,7 @@ export const WiperHome = () => {
                         <span className="text-sm font-medium">{job.planName}</span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4 mt-3">
+                      <div className="grid grid-cols-2 gap-4 mt-3">
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Vehicle</p>
                           <div className="flex items-start">
@@ -579,15 +592,6 @@ export const WiperHome = () => {
                           </div>
                         </div>
                         
-                        <div>
-                          <p className="text-xs text-gray-500 mb-1">Location</p>
-                          <div className="flex items-start">
-                            <MapPin className="w-3.5 h-3.5 text-gray-600 mt-0.5 mr-1.5 flex-shrink-0" />
-                            <p className="text-sm font-medium truncate">
-                              {job.location}
-                            </p>
-                          </div>
-                        </div>
                       </div>
 
                       <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
@@ -635,29 +639,8 @@ export const WiperHome = () => {
         </Card>
       </div>
 
-      {/* Bottom navigation - optional */}
-      <div className="bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 h-16 flex items-center justify-around">
-        <button className="flex flex-col items-center justify-center w-1/4 h-full">
-          <Calendar className="w-5 h-5 text-[#c5e82e]" />
-          <span className="text-xs mt-1 font-medium">Home</span>
-        </button>
-        <button className="flex flex-col items-center justify-center w-1/4 h-full"
-          onClick={navigateToJobBooking}>
-          <Package className="w-5 h-5 text-gray-400" />
-          <span className="text-xs mt-1">Jobs</span>
-        </button>
-        <button className="flex flex-col items-center justify-center w-1/4 h-full">
-          <Clock className="w-5 h-5 text-gray-400" />
-          <span className="text-xs mt-1">History</span>
-        </button>
-        <button className="flex flex-col items-center justify-center w-1/4 h-full">
-          <User className="w-5 h-5 text-gray-400" />
-          <span className="text-xs mt-1">Profile</span>
-        </button>
-      </div>
-
-      {/* Add padding at the bottom to prevent content from being hidden behind the bottom nav */}
-      <div className="h-16"></div>
+      {/* Use the WiperNavigation component */}
+      <WiperNavigation />
 
       <style jsx global>{`
         .no-scrollbar {

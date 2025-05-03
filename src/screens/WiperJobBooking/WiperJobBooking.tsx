@@ -23,6 +23,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "../../components/CustomToast";
+import WiperNavigation from "../../components/WiperNavigation";
 
 // Interface definitions
 interface MicroSlot {
@@ -366,15 +367,6 @@ export const WiperJobBooking = () => {
             <h1 className="text-xl font-bold">Wiper Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-gray-200"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="w-4 h-4 mr-1" />
-              Filter
-            </Button>
             <div className="h-8 w-8 bg-[#c5e82e] rounded-full flex items-center justify-center">
               <User className="w-4 h-4 text-black" />
             </div>
@@ -744,6 +736,10 @@ export const WiperJobBooking = () => {
         </AnimatePresence>
       </div>
 
+      {/* Use the WiperNavigation component */}
+      <WiperNavigation />
+
+      {/* Keep your existing modals */}
       {/* Job detail modal */}
       <AnimatePresence>
         {selectedJob && !showConfirmation && (
