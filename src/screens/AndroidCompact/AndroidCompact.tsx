@@ -1281,21 +1281,47 @@ export const AndroidCompact = (): JSX.Element => {
               </Button>
 
               {(isLogin || signupStep === 1) && (
-                <div className="text-center">
-                  <button
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      setSignupStep(1);
-                      setErrorMessage("");
-                    }}
-                    className="text-[#a5c824] hover:text-[#c5e82e] font-medium transition-colors"
-                  >
-                    {isLogin
-                      ? "Don't have an account? Sign Up"
-                      : "Already have an account? Sign In"}
-                  </button>
-                </div>
-              )}
+  <div className="text-center space-y-4">
+    <button
+      onClick={() => {
+        setIsLogin(!isLogin);
+        setSignupStep(1);
+        setErrorMessage("");
+      }}
+      className="text-[#a5c824] hover:text-[#c5e82e] font-medium transition-colors"
+    >
+      {isLogin
+        ? "Don't have an account? Sign Up"
+        : "Already have an account? Sign In"}
+    </button>
+    
+    <div className="flex items-center justify-center">
+      <div className="h-px bg-gray-200 flex-grow"></div>
+      <span className="px-4 text-sm text-gray-500">or</span>
+      <div className="h-px bg-gray-200 flex-grow"></div>
+    </div>
+    
+    <a 
+      href="/wiper-profile-setup"
+      className="inline-flex items-center justify-center py-2.5 px-5 bg-[#c5e82e] text-black font-medium rounded-lg hover:bg-[#b2cc2b] transition-colors"
+    >
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        className="h-5 w-5 mr-2" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      >
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      Join as Wiper
+    </a>
+  </div>
+)}
             </motion.div>
           </motion.div>
         </div>

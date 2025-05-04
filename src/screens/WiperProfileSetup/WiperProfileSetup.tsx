@@ -34,6 +34,8 @@ export const WiperProfileSetup = () => {
     longitude: number | null;
     address: string | null;
   }>({ latitude: null, longitude: null, address: null });
+  // Add this near your other state variables
+const [tempAddress, setTempAddress] = useState<string | null>(null);
 
   // Add phone verification states
   const [phoneVerificationStep, setPhoneVerificationStep] = useState(1); // 1: Phone entry, 2: OTP verification
@@ -73,15 +75,15 @@ export const WiperProfileSetup = () => {
       
       // Check if user already completed onboarding
       if (wiperSession?.user?.onboarded) {
-        navigate('/wiper-dashboard');
+        navigate('/wiper-home');
       }
 
       // Set phone number from session if available
       if (wiperSession?.user?.phone) {
         const phoneWithoutCode = wiperSession.user.phone.replace('+91', '');
         setPhoneNumber(phoneWithoutCode);
-        // Skip phone verification if already authenticated
-        setPhoneVerificationStep(3); // Move directly to profile setup
+
+        setPhoneVerificationStep(3); 
       }
     } catch (error) {
       console.error("Error loading wiper data:", error);
@@ -372,12 +374,6 @@ export const WiperProfileSetup = () => {
         return;
       }
       setErrorMessage("");
-    } else if (currentStep === 4) {
-      if (!location.latitude || !location.longitude) {
-        setErrorMessage("Please allow location access");
-        return;
-      }
-      setErrorMessage("");
     } else if (currentStep === 5) {
       if (profile.paymentPreference === 'bank') {
         if (!profile.bankName || !profile.accountNumber || !profile.ifscCode) {
@@ -435,7 +431,7 @@ export const WiperProfileSetup = () => {
       localStorage.setItem('wiperSession', JSON.stringify(updatedSession));
       
       toast("Profile setup completed successfully!");
-      navigate("/wiper-dashboard");
+      navigate("/wiper-home");
     } catch (error) {
       console.error("Error saving profile:", error);
       setErrorMessage("Failed to save your profile. Please try again.");
@@ -894,86 +890,140 @@ case 2:
           </motion.div>
         );
       
-// Update the renderStepContent function's case 4:
-case 4:
-  return (
-    <motion.div 
-      key="step4"
-      variants={fadeVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="space-y-6"
-    >
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Location Access</h2>
-        <p className="text-gray-600">We need your location to find jobs near you</p>
-      </div>
 
-      <div className="p-6 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center space-y-4">
-        <div className="p-3.5 bg-[#c5e82e]/20 rounded-full">
-          <MapPin className="w-8 h-8 text-[#c5e82e]" />
-        </div>
-        
-        {location.address ? (
-          <div className="text-center w-full">
-            <div className="flex items-center justify-center space-x-2 text-green-600 font-medium mb-3">
-              <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="w-3.5 h-3.5" />
+        case 4:
+          return (
+            <motion.div 
+              key="step4"
+              variants={fadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="space-y-6"
+            >
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold">Location Access</h2>
+                <p className="text-gray-600">We need your location to find jobs near you</p>
               </div>
-              <span>Location access granted</span>
-            </div>
-            
-            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-              <p className="text-gray-800 font-medium">
-                {location.address}
+        
+              <div className="p-6 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center space-y-4">
+                <div className="p-3.5 bg-[#c5e82e]/20 rounded-full">
+                  <MapPin className="w-8 h-8 text-[#c5e82e]" />
+                </div>
+                
+                {location.address ? (
+                  <div className="text-center w-full">
+                    <div className="flex items-center justify-center space-x-2 text-green-600 font-medium mb-3">
+                      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                        <Check className="w-3.5 h-3.5" />
+                      </div>
+                      <span>Location set successfully</span>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                      <p className="text-gray-800 font-medium">
+                        {location.address}
+                      </p>
+                      {location.latitude && location.longitude && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Lat: {location.latitude?.toFixed(6)}, Lng: {location.longitude?.toFixed(6)}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <button 
+                      onClick={() => setLocation({ latitude: null, longitude: null, address: null })}
+                      className="text-sm text-red-500 hover:text-red-600 mt-3 flex items-center justify-center mx-auto"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                      Change location
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-4 w-full">
+                    <p className="text-gray-700 font-medium">
+                      Choose how to set your location
+                    </p>
+                    
+                    <div className="flex flex-col gap-3">
+                      <Button
+                        onClick={handleGetLocation}
+                        disabled={locationLoading}
+                        className="bg-black text-white hover:bg-gray-800 rounded-xl py-5 w-full shadow-md hover:shadow-lg transition-all"
+                      >
+                        {locationLoading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Getting Location...
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-5 h-5 mr-2" />
+                            Use Current Location
+                          </>
+                        )}
+                      </Button>
+                      
+                      <div className="relative mt-2">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-2 bg-white text-gray-500">or enter manually</span>
+                        </div>
+                      </div>
+                      <div className="space-y-3 mt-2">
+  <div className="relative">
+    <Input
+      type="text"
+      placeholder="Enter your full address"
+      className="py-5 px-4 rounded-xl bg-white border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20"
+      onChange={(e) => {
+        setTempAddress(e.target.value);
+      }}
+      value={tempAddress || ''}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && tempAddress?.trim()) {
+          e.preventDefault();
+          setLocation({
+            latitude: null,
+            longitude: null,
+            address: tempAddress.trim()
+          });
+        }
+      }}
+    />
+    <button
+      type="button"
+      onClick={() => {
+        if (tempAddress?.trim()) {
+          setLocation({
+            latitude: null,
+            longitude: null,
+            address: tempAddress.trim()
+          });
+        }
+      }}
+      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#c5e82e] text-black p-1.5 rounded-lg hover:bg-[#b2cc2b] transition-colors"
+      disabled={!tempAddress?.trim()}
+    >
+      <Check className="w-4 h-4" />
+    </button>
+  </div>
+  <p className="text-xs text-gray-500 text-center">
+    Please include city, state and country for better job matching
+  </p>
+</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+        
+              <p className="text-center text-sm text-gray-500">
+                Your location helps us match you with nearby vehicles
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Lat: {location.latitude?.toFixed(6)}, Lng: {location.longitude?.toFixed(6)}
-              </p>
-            </div>
-            
-            <button 
-              onClick={handleGetLocation}
-              disabled={locationLoading}
-              className="text-sm text-[#c5e82e] hover:text-[#a5c824] mt-3 flex items-center justify-center mx-auto"
-            >
-              <RefreshCw className="w-3.5 h-3.5 mr-1" />
-              Refresh location
-            </button>
-          </div>
-        ) : (
-          <div className="text-center space-y-4 w-full">
-            <p className="text-gray-700">
-              Please allow location access so we can find jobs near you
-            </p>
-            <Button
-              onClick={handleGetLocation}
-              disabled={locationLoading}
-              className="bg-black text-white hover:bg-gray-800 rounded-xl py-5 w-full shadow-md hover:shadow-lg transition-all"
-            >
-              {locationLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Getting Location...
-                </>
-              ) : (
-                <>
-                  <MapPin className="w-5 h-5 mr-2" />
-                  Allow Location Access
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <p className="text-center text-sm text-gray-500">
-        Your location helps us match you with nearby vehicles
-      </p>
-    </motion.div>
-  );
-
+            </motion.div>
+          );
 case 5:
   return (
     <motion.div 
