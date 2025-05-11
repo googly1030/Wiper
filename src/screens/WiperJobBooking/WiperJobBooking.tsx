@@ -153,7 +153,7 @@ export const WiperJobBooking = () => {
         regNumber: "TN 01 AK 4567", // Added registration number
         location: "Anna Nagar, Chennai",
         distance: "3.2 km",
-        dayOffset: 0, // today
+        dayOffset: 0, 
         startHour: 9
       },
       {
@@ -165,7 +165,7 @@ export const WiperJobBooking = () => {
         regNumber: "TN 07 CJ 2345", // Added registration number
         location: "T Nagar, Chennai",
         distance: "5.7 km",
-        dayOffset: 0, // today
+        dayOffset: 0, 
         startHour: 14
       },
       {
@@ -175,8 +175,9 @@ export const WiperJobBooking = () => {
         carType: "SUV",
         carColor: "White",
         location: "Velachery, Chennai",
+         regNumber: "TN 07 CJ 2345",
         distance: "8.1 km",
-        dayOffset: 1, // tomorrow
+        dayOffset: 1, 
         startHour: 10
       },
       {
@@ -184,10 +185,11 @@ export const WiperJobBooking = () => {
         carMake: "BMW",
         carModel: "3 Series",
         carType: "Premium",
+          regNumber: "TN 07 CJ 2345",
         carColor: "Black",
         location: "Adyar, Chennai",
         distance: "6.5 km",
-        dayOffset: 1, // tomorrow
+        dayOffset: 1, 
         startHour: 16
       },
       {
@@ -196,9 +198,10 @@ export const WiperJobBooking = () => {
         carModel: "Altroz",
         carType: "Hatchback",
         carColor: "Blue",
+          regNumber: "TN 07 CJ 145",
         location: "Porur, Chennai",
         distance: "10.3 km",
-        dayOffset: 2, // day after tomorrow
+        dayOffset: 2, 
         startHour: 8
       },
       {
@@ -207,9 +210,10 @@ export const WiperJobBooking = () => {
         carModel: "XUV700",
         carType: "SUV",
         carColor: "Green",
+          regNumber: "TN 07 CS 2345",
         location: "OMR, Chennai",
         distance: "12.8 km",
-        dayOffset: 2, // day after tomorrow
+        dayOffset: 2, 
         startHour: 11
       }
     ];
@@ -357,7 +361,7 @@ export const WiperJobBooking = () => {
     </div>
     <div className="text-right mt-1.5">
       <div className="text-lg font-bold text-black">
-        ₹{job.payment}
+        ₹1000
       </div>
       {job.planFrequency && (
         <div className="text-xs text-gray-500">
@@ -416,86 +420,6 @@ export const WiperJobBooking = () => {
             </motion.div>
           </AnimatePresence>
         </div>
-
-        {/* My Bookings Section - Will show once jobs are booked - improved spacing */}
-        {myBookings.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h2 className="text-lg font-bold mb-4 flex items-center">
-              <CheckCircle className="w-5 h-5 mr-2 text-green-600" /> 
-              My Booked Jobs
-            </h2>
-            
-            <div className="space-y-5">
-              {myBookings.map(job => (
-                <motion.div
-                  key={job.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl border border-green-200 shadow-sm overflow-hidden"
-                >
-                  <div className="p-4 sm:p-5">
-                    {/* Plan Badge and Time info - improved mobile layout */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-100 text-green-800 px-2 py-1 text-xs border border-green-200">
-                          {job.planName}
-                        </Badge>
-                        <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-700 text-xs">
-                          {format(parseISO(job.date), "MMM d")}
-                        </Badge>
-                      </div>
-                      <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs w-fit">
-                        {job.startTime} - {job.endTime}
-                      </Badge>
-                    </div>
-                    
-                    {/* Car details section - improved mobile layout */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-3 sm:gap-0 sm:items-start">
-                      <div>
-                        <h3 className="font-medium text-base mb-1">
-                          {job.carDetails.make} {job.carDetails.model}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs">
-                            {job.carDetails.type}
-                          </Badge>
-                          <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs">
-                            {job.carDetails.color}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center text-gray-600 text-xs">
-                          <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                          <span className="truncate max-w-[200px]">{job.location}</span>
-                          <span className="mx-2 text-gray-300">•</span>
-                          <span>{job.distance}</span>
-                        </div>
-                      </div>
-                      <div className="sm:text-right">
-                        <div className="text-lg font-bold text-black">
-                          ₹{job.payment}
-                        </div>
-                        {job.planFrequency && (
-                          <div className="text-xs text-gray-500">
-                            {job.planFrequency}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Success note - better padding */}
-                    <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-100 flex items-start mt-4">
-                      <CheckCircle className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-green-800">
-                        <span className="font-medium">Booked Successfully!</span> You can find all your booked jobs in 
-                        the My Bookings section. Remember to arrive at your selected time.
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* WiperNavigation component */}
