@@ -401,7 +401,7 @@ export const WiperJobBooking = () => {
                             </div>
                             <div className="text-right mt-1.5">
                               <div className="text-lg font-bold text-black">
-                                ₹{job.payment}
+                                ₹800
                               </div>
                               {job.planFrequency && (
                                 <div className="text-xs text-gray-500">

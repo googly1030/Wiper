@@ -106,7 +106,7 @@ export const JobDetails = () => {
   const [leaveReason, setLeaveReason] = useState("");
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [activeTab, setActiveTab] = useState("calendar");
-  
+
   // New state for step-based workflow
   const [currentStep, setCurrentStep] = useState<WorkflowStep>("summary");
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
@@ -152,10 +152,15 @@ export const JobDetails = () => {
         const startDate = parseISO(foundJob.date);
         const calendarDays: CalendarDay[] = [];
 
-        // NEW CODE: Check if there are any saved completed jobs for this job
+        // Check if there are any saved completed jobs for this job
         const completedJobs = localStorage.getItem("wiperCompletedJobs");
         const parsedCompletedJobs = completedJobs ? JSON.parse(completedJobs) : {};
         const thisJobCompletions = parsedCompletedJobs[jobId] || {};
+
+        // NEW: Check if there are any leave requests for this job
+        const leaveRequests = localStorage.getItem("wiperLeaveRequests");
+        const parsedLeaveRequests = leaveRequests ? JSON.parse(leaveRequests) : {};
+        const thisJobLeaves = parsedLeaveRequests[jobId] || {};
 
         for (let i = 0; i < 30; i++) {
           const currentDate = addDays(startDate, i);
@@ -167,12 +172,19 @@ export const JobDetails = () => {
           let photoUrl: string | undefined;
           let notes: string | undefined;
 
-          // Check if this day is marked as completed in localStorage
-          if (thisJobCompletions[dateStr]) {
+          // First check if this day has a leave request
+          if (thisJobLeaves[dateStr]) {
+            status = "leave";
+            notes = thisJobLeaves[dateStr].reason || "Leave requested";
+          }
+          // Then check if this day is marked as completed
+          else if (thisJobCompletions[dateStr]) {
             status = "completed";
             photoUrl = thisJobCompletions[dateStr].photoUrl;
             notes = "Car cleaned as scheduled";
-          } else if (isSameDay(currentDate, today)) {
+          } 
+          // Otherwise determine based on date
+          else if (isSameDay(currentDate, today)) {
             status = "pending"; // Today is pending by default
           } else if (currentDate < today) {
             // Mock data: 80% chance of completion for past days
@@ -181,20 +193,16 @@ export const JobDetails = () => {
             status = "upcoming";
           }
 
-          // If stored in localStorage, override the mock data
-          const completionData = thisJobCompletions[dateStr];
-          if (completionData) {
-            status = completionData.status;
-            photoUrl = completionData.photoUrl;
-          }
-
           calendarDays.push({
             date: dateStr,
             status,
-            notes: notes || (status === "completed" ? "Car cleaned as scheduled" : ""),
-            photoUrl: photoUrl || (status === "completed" 
-              ? `/mock-photos/car-${Math.floor(Math.random() * 5) + 1}.jpg` 
-              : undefined),
+            notes: notes || (status === "completed" ? "Car cleaned as scheduled" : 
+                            status === "leave" ? "Leave day" : ""),
+            photoUrl:
+              photoUrl ||
+              (status === "completed"
+                ? `/mock-photos/car-${Math.floor(Math.random() * 5) + 1}.jpg`
+                : undefined),
           });
         }
 
@@ -243,7 +251,10 @@ export const JobDetails = () => {
     const todayData = job.calendarDays.find((day) => day.date === today);
 
     // If we have an uploaded photo but not saved to the job yet, save it now
-    if (uploadedPhoto && (!todayData?.photoUrl || todayData.photoUrl !== uploadedPhoto)) {
+    if (
+      uploadedPhoto &&
+      (!todayData?.photoUrl || todayData.photoUrl !== uploadedPhoto)
+    ) {
       try {
         setLoading(true);
         await new Promise((resolve) => setTimeout(resolve, 800));
@@ -306,31 +317,38 @@ export const JobDetails = () => {
       // First get all booked jobs
       const storedBookings = localStorage.getItem("wiperBookedJobs");
       const parsedBookings = storedBookings ? JSON.parse(storedBookings) : [];
-      
+
       // Update the specific job in the array
-      const updatedBookings = parsedBookings.map((bookedJob: any) => 
-        bookedJob.id === job.id ? {...bookedJob, calendarDays: updatedJob.calendarDays } : bookedJob
+      const updatedBookings = parsedBookings.map((bookedJob: any) =>
+        bookedJob.id === job.id
+          ? { ...bookedJob, calendarDays: updatedJob.calendarDays }
+          : bookedJob
       );
-      
+
       // Save back to localStorage
       localStorage.setItem("wiperBookedJobs", JSON.stringify(updatedBookings));
-      
+
       // Also store completed jobs in a separate key for easier tracking
       const completedJobs = localStorage.getItem("wiperCompletedJobs");
-      const parsedCompletedJobs = completedJobs ? JSON.parse(completedJobs) : {};
-      
+      const parsedCompletedJobs = completedJobs
+        ? JSON.parse(completedJobs)
+        : {};
+
       // Update completed jobs with today's date for this job
       parsedCompletedJobs[job.id] = {
-        ...parsedCompletedJobs[job.id] || {},
+        ...(parsedCompletedJobs[job.id] || {}),
         [today]: {
           status: "completed",
           photoUrl: uploadedPhoto || todayData?.photoUrl,
           date: today,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       };
-      
-      localStorage.setItem("wiperCompletedJobs", JSON.stringify(parsedCompletedJobs));
+
+      localStorage.setItem(
+        "wiperCompletedJobs",
+        JSON.stringify(parsedCompletedJobs)
+      );
 
       // Show success message
       toast("Marked today's job as complete!");
@@ -351,7 +369,7 @@ export const JobDetails = () => {
 
     // Always ensure we're only uploading for today
     const today = format(new Date(), "yyyy-MM-dd");
-    
+
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -363,16 +381,15 @@ export const JobDetails = () => {
 
       // Create a mock URL for the uploaded photo
       const mockPhotoUrl = URL.createObjectURL(files[0]);
-      
+
       // Store the photo URL in state
       setUploadedPhoto(mockPhotoUrl);
 
       // Show success message
       toast("Photo uploaded successfully!");
-      
+
       // Proceed to completion step
       setCurrentStep("complete");
-
     } catch (error) {
       console.error("Error uploading photo:", error);
       toast("Failed to upload photo");
@@ -418,34 +435,45 @@ export const JobDetails = () => {
 
       setJob(updatedJob);
 
-      // NEW CODE: Save to localStorage
+      // Save to localStorage - both the job and separate leave tracking
       const storedBookings = localStorage.getItem("wiperBookedJobs");
       const parsedBookings = storedBookings ? JSON.parse(storedBookings) : [];
-      
+
       // Update the specific job in the array
-      const updatedBookings = parsedBookings.map((bookedJob: any) => 
-        bookedJob.id === job.id ? {...bookedJob, calendarDays: updatedJob.calendarDays } : bookedJob
+      const updatedBookings = parsedBookings.map((bookedJob: any) =>
+        bookedJob.id === job.id
+          ? { ...bookedJob, calendarDays: updatedJob.calendarDays }
+          : bookedJob
       );
-      
+
       // Save back to localStorage
       localStorage.setItem("wiperBookedJobs", JSON.stringify(updatedBookings));
-      
+
       // Also store leave days in a separate key
       const leaveRequests = localStorage.getItem("wiperLeaveRequests");
-      const parsedLeaveRequests = leaveRequests ? JSON.parse(leaveRequests) : {};
-      
+      const parsedLeaveRequests = leaveRequests
+        ? JSON.parse(leaveRequests)
+        : {};
+
       // Update leave requests for this job
-      parsedLeaveRequests[job.id] = {
-        ...parsedLeaveRequests[job.id] || {},
-        [leaveApplicationDay]: {
-          status: "leave",
-          reason: leaveReason,
-          date: leaveApplicationDay,
-          timestamp: new Date().toISOString()
-        }
-      };
+      if (!parsedLeaveRequests[job.id]) {
+        parsedLeaveRequests[job.id] = {};
+      }
       
-      localStorage.setItem("wiperLeaveRequests", JSON.stringify(parsedLeaveRequests));
+      parsedLeaveRequests[job.id][leaveApplicationDay] = {
+        status: "leave",
+        reason: leaveReason,
+        date: leaveApplicationDay,
+        timestamp: new Date().toISOString(),
+      };
+
+      localStorage.setItem(
+        "wiperLeaveRequests",
+        JSON.stringify(parsedLeaveRequests)
+      );
+
+      // Trigger storage event to update other tabs
+      window.dispatchEvent(new Event('storage'));
 
       // Show success message
       toast("Leave application submitted");
@@ -677,31 +705,32 @@ export const JobDetails = () => {
         )}
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {isSameDay(parseISO(selectedDay.date), new Date()) && selectedDay.status === "pending" && (
-            <Button
-              className="bg-[#c5e82e] hover:bg-[#b3d429] text-black shadow-sm w-full"
-              onClick={() => setCurrentStep("upload")}
-            >
-              <Camera className="w-4 h-4 mr-1.5" />
-              Upload Photo & Complete
-            </Button>
-          )}
+          {isSameDay(parseISO(selectedDay.date), new Date()) &&
+            selectedDay.status === "pending" && (
+              <Button
+                className="bg-[#c5e82e] hover:bg-[#b3d429] text-black shadow-sm w-full"
+                onClick={() => setCurrentStep("upload")}
+              >
+                <Camera className="w-4 h-4 mr-1.5" />
+                Upload Photo & Complete
+              </Button>
+            )}
 
-          {parseISO(selectedDay.date) > new Date() && 
-          selectedDay.status !== "completed" && 
-          selectedDay.status !== "leave" && (
-            <Button
-              variant="outline"
-              className="text-xs w-full flex items-center justify-center"
-              onClick={() => {
-                setLeaveApplicationDay(selectedDay.date);
-                setCurrentStep("leave");
-              }}
-            >
-              <CalendarOff className="w-3.5 h-3.5 mr-1.5" />
-              Apply Leave
-            </Button>
-          )}
+          {parseISO(selectedDay.date) > new Date() &&
+            selectedDay.status !== "completed" &&
+            selectedDay.status !== "leave" && (
+              <Button
+                variant="outline"
+                className="text-xs w-full flex items-center justify-center"
+                onClick={() => {
+                  setLeaveApplicationDay(selectedDay.date);
+                  setCurrentStep("leave");
+                }}
+              >
+                <CalendarOff className="w-3.5 h-3.5 mr-1.5" />
+                Apply Leave
+              </Button>
+            )}
         </div>
       </div>
     );
@@ -801,10 +830,7 @@ export const JobDetails = () => {
                       <div className="text-xs text-gray-500">
                         End:{" "}
                         {format(
-                          addDays(
-                            parseISO(job.date),
-                            job.serviceDuration - 1
-                          ),
+                          addDays(parseISO(job.date), job.serviceDuration - 1),
                           "MMM d"
                         )}
                       </div>
@@ -871,8 +897,8 @@ export const JobDetails = () => {
                           <div className="flex items-start mb-3 bg-amber-50 p-2.5 rounded-lg border border-amber-100">
                             <Info className="w-4 h-4 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
                             <p className="text-xs text-amber-800">
-                              Complete today's job in 2 simple steps:
-                              1. Upload a photo of the cleaned car <br />
+                              Complete today's job in 2 simple steps: 1. Upload
+                              a photo of the cleaned car <br />
                               2. Mark the job as complete
                             </p>
                           </div>
@@ -911,18 +937,20 @@ export const JobDetails = () => {
       case "upload":
         const today = format(new Date(), "yyyy-MM-dd");
         const todayData = job.calendarDays.find((day) => day.date === today);
-        
+
         return (
           <Card className="border-none shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-[#f5f9e6] to-[#edf8c8] p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Camera className="w-5 h-5 mr-2 text-[#a8c625]" />
-                  <CardTitle className="text-lg">Step 1: Upload Photo</CardTitle>
+                  <CardTitle className="text-lg">
+                    Step 1: Upload Photo
+                  </CardTitle>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="h-8 w-8 p-0 rounded-full"
                   onClick={() => setCurrentStep("summary")}
                 >
@@ -939,7 +967,7 @@ export const JobDetails = () => {
                   For: {format(new Date(), "EEEE, MMMM d, yyyy")} (Today)
                 </Badge>
               </div>
-              
+
               <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center mb-5 bg-gray-50">
                 <div className="max-w-xs mx-auto">
                   {uploadedPhoto || todayData?.photoUrl ? (
@@ -1035,11 +1063,13 @@ export const JobDetails = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <CheckCircle className="w-5 h-5 mr-2 text-[#a8c625]" />
-                  <CardTitle className="text-lg">Step 2: Complete Job</CardTitle>
+                  <CardTitle className="text-lg">
+                    Step 2: Complete Job
+                  </CardTitle>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="h-8 w-8 p-0 rounded-full"
                   onClick={() => setCurrentStep("summary")}
                 >
@@ -1055,17 +1085,18 @@ export const JobDetails = () => {
                 >
                   For: {format(new Date(), "EEEE, MMMM d, yyyy")} (Today)
                 </Badge>
-                
+
                 <div className="bg-green-50 p-4 rounded-lg border border-green-100 mb-5">
                   <h3 className="text-green-800 font-medium flex items-center mb-2">
                     <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
                     Photo uploaded successfully
                   </h3>
                   <p className="text-sm text-green-700">
-                    You can now mark this job as complete to receive your payment.
+                    You can now mark this job as complete to receive your
+                    payment.
                   </p>
                 </div>
-                
+
                 {uploadedPhoto && (
                   <div className="relative rounded-lg overflow-hidden border border-gray-200 mb-5 shadow-sm">
                     <img
@@ -1075,14 +1106,16 @@ export const JobDetails = () => {
                     />
                   </div>
                 )}
-                
+
                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-100 mb-5">
                   <h3 className="text-amber-800 font-medium flex items-center mb-2">
                     <Info className="w-4 h-4 mr-2 text-amber-600" />
                     Important
                   </h3>
                   <p className="text-sm text-amber-700">
-                    By marking this job as complete, you confirm that you've thoroughly cleaned the vehicle according to the service requirements.
+                    By marking this job as complete, you confirm that you've
+                    thoroughly cleaned the vehicle according to the service
+                    requirements.
                   </p>
                 </div>
               </div>
@@ -1118,14 +1151,14 @@ export const JobDetails = () => {
       case "leave":
         return (
           <Card className="border-none shadow-sm rounded-xl overflow-hidden">
-            <CardHeader className="p-4 flex items-center justify-between border-b border-gray-100">
+            <CardHeader className="p-4 flex flex-row items-center justify-between border-b border-gray-100">
               <div className="flex items-center">
                 <CalendarOff className="w-5 h-5 mr-2 text-[#a8c625]" />
                 <CardTitle className="text-lg">Apply for Leave</CardTitle>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-8 w-8 p-0 rounded-full"
                 onClick={() => setCurrentStep("summary")}
               >
@@ -1138,7 +1171,8 @@ export const JobDetails = () => {
                   variant="outline"
                   className="mb-4 px-3 py-1.5 border-orange-200 bg-orange-50 text-orange-800"
                 >
-                  For: {format(parseISO(leaveApplicationDay), "EEEE, MMMM d, yyyy")}
+                  For:{" "}
+                  {format(parseISO(leaveApplicationDay), "EEEE, MMMM d, yyyy")}
                 </Badge>
               )}
 
@@ -1157,7 +1191,8 @@ export const JobDetails = () => {
               <div className="flex items-start mb-5 p-3 bg-amber-50 rounded-lg border border-amber-100">
                 <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
                 <p className="text-xs text-amber-600">
-                  Note: Taking too many leaves may affect your earnings and performance rating.
+                  Note: Taking too many leaves may affect your earnings and
+                  performance rating.
                 </p>
               </div>
             </CardContent>
@@ -1209,9 +1244,13 @@ export const JobDetails = () => {
               </Button>
             )}
             <h1 className="text-xl font-bold">
-              {currentStep === "summary" ? "Job Details" : 
-               currentStep === "upload" ? "Upload Photo" :
-               currentStep === "complete" ? "Complete Job" : "Apply Leave"}
+              {currentStep === "summary"
+                ? "Job Details"
+                : currentStep === "upload"
+                ? "Upload Photo"
+                : currentStep === "complete"
+                ? "Complete Job"
+                : "Apply Leave"}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -1260,7 +1299,7 @@ export const JobDetails = () => {
       {/* Floating Action Button for today's actions (when on summary screen) */}
       {currentStep === "summary" && !todayCompleted && job && (
         <div className="fixed bottom-20 right-4 z-20">
-          <Button 
+          <Button
             className="h-14 w-14 rounded-full bg-[#c5e82e] hover:bg-[#b3d429] text-black shadow-lg"
             onClick={() => setCurrentStep("upload")}
           >

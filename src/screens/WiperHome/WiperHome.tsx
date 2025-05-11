@@ -415,16 +415,7 @@ export const WiperHome = () => {
                           </div>
                           <span className="text-sm font-medium">{earningsStats.totalJobs}</span>
                         </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
-                              <TrendingUp className="w-4 h-4 text-orange-600" />
-                            </div>
-                            <span className="text-sm text-gray-600">Acceptance Rate</span>
-                          </div>
-                          <span className="text-sm font-medium">94%</span>
-                        </div>
+                      
                       </div>
                     </CardContent>
                   </Card>
@@ -525,7 +516,7 @@ export const WiperHome = () => {
                                   </div>
                                   <div className="text-right mt-1.5">
                                     <div className="text-lg font-bold text-black">
-                                      ₹{job.payment}
+                                      ₹800
                                     </div>
                                     {job.planFrequency && (
                                       <div className="text-xs text-gray-500">
