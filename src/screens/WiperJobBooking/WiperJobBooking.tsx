@@ -152,7 +152,14 @@ export const WiperJobBooking = () => {
       // Close the confirm modal
       setConfirmModal(null);
       
-      toast("Job booked successfully! You can view it in 'My Bookings'");
+      toast("Job booked successfully! Redirecting to dashboard...");
+      
+      // Add a small delay before navigation for better UX
+      setTimeout(() => {
+        // Navigate to home page after successful booking
+        navigate('/wiper-home');
+      }, 1000);
+      
     } catch (error) {
       console.error("Error booking job:", error);
       toast("Failed to book job. Please try again.");

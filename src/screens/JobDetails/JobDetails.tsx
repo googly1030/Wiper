@@ -152,6 +152,11 @@ export const JobDetails = () => {
         const startDate = parseISO(foundJob.date);
         const calendarDays: CalendarDay[] = [];
 
+        // NEW CODE: Check if there are any saved completed jobs for this job
+        const completedJobs = localStorage.getItem("wiperCompletedJobs");
+        const parsedCompletedJobs = completedJobs ? JSON.parse(completedJobs) : {};
+        const thisJobCompletions = parsedCompletedJobs[jobId] || {};
+
         for (let i = 0; i < 30; i++) {
           const currentDate = addDays(startDate, i);
           const dateStr = format(currentDate, "yyyy-MM-dd");
@@ -159,8 +164,15 @@ export const JobDetails = () => {
 
           // Determine status based on date
           let status: CalendarDay["status"] = "none";
+          let photoUrl: string | undefined;
+          let notes: string | undefined;
 
-          if (isSameDay(currentDate, today)) {
+          // Check if this day is marked as completed in localStorage
+          if (thisJobCompletions[dateStr]) {
+            status = "completed";
+            photoUrl = thisJobCompletions[dateStr].photoUrl;
+            notes = "Car cleaned as scheduled";
+          } else if (isSameDay(currentDate, today)) {
             status = "pending"; // Today is pending by default
           } else if (currentDate < today) {
             // Mock data: 80% chance of completion for past days
@@ -169,14 +181,20 @@ export const JobDetails = () => {
             status = "upcoming";
           }
 
+          // If stored in localStorage, override the mock data
+          const completionData = thisJobCompletions[dateStr];
+          if (completionData) {
+            status = completionData.status;
+            photoUrl = completionData.photoUrl;
+          }
+
           calendarDays.push({
             date: dateStr,
             status,
-            notes: status === "completed" ? "Car cleaned as scheduled" : "",
-            photoUrl:
-              status === "completed"
-                ? `/mock-photos/car-${Math.floor(Math.random() * 5) + 1}.jpg`
-                : undefined,
+            notes: notes || (status === "completed" ? "Car cleaned as scheduled" : ""),
+            photoUrl: photoUrl || (status === "completed" 
+              ? `/mock-photos/car-${Math.floor(Math.random() * 5) + 1}.jpg` 
+              : undefined),
           });
         }
 
@@ -284,6 +302,36 @@ export const JobDetails = () => {
       setJob(updatedJob);
       setTodayCompleted(true);
 
+      // NEW CODE: Save the updated job to localStorage
+      // First get all booked jobs
+      const storedBookings = localStorage.getItem("wiperBookedJobs");
+      const parsedBookings = storedBookings ? JSON.parse(storedBookings) : [];
+      
+      // Update the specific job in the array
+      const updatedBookings = parsedBookings.map((bookedJob: any) => 
+        bookedJob.id === job.id ? {...bookedJob, calendarDays: updatedJob.calendarDays } : bookedJob
+      );
+      
+      // Save back to localStorage
+      localStorage.setItem("wiperBookedJobs", JSON.stringify(updatedBookings));
+      
+      // Also store completed jobs in a separate key for easier tracking
+      const completedJobs = localStorage.getItem("wiperCompletedJobs");
+      const parsedCompletedJobs = completedJobs ? JSON.parse(completedJobs) : {};
+      
+      // Update completed jobs with today's date for this job
+      parsedCompletedJobs[job.id] = {
+        ...parsedCompletedJobs[job.id] || {},
+        [today]: {
+          status: "completed",
+          photoUrl: uploadedPhoto || todayData?.photoUrl,
+          date: today,
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      localStorage.setItem("wiperCompletedJobs", JSON.stringify(parsedCompletedJobs));
+
       // Show success message
       toast("Marked today's job as complete!");
       setCurrentStep("summary");
@@ -369,6 +417,35 @@ export const JobDetails = () => {
       };
 
       setJob(updatedJob);
+
+      // NEW CODE: Save to localStorage
+      const storedBookings = localStorage.getItem("wiperBookedJobs");
+      const parsedBookings = storedBookings ? JSON.parse(storedBookings) : [];
+      
+      // Update the specific job in the array
+      const updatedBookings = parsedBookings.map((bookedJob: any) => 
+        bookedJob.id === job.id ? {...bookedJob, calendarDays: updatedJob.calendarDays } : bookedJob
+      );
+      
+      // Save back to localStorage
+      localStorage.setItem("wiperBookedJobs", JSON.stringify(updatedBookings));
+      
+      // Also store leave days in a separate key
+      const leaveRequests = localStorage.getItem("wiperLeaveRequests");
+      const parsedLeaveRequests = leaveRequests ? JSON.parse(leaveRequests) : {};
+      
+      // Update leave requests for this job
+      parsedLeaveRequests[job.id] = {
+        ...parsedLeaveRequests[job.id] || {},
+        [leaveApplicationDay]: {
+          status: "leave",
+          reason: leaveReason,
+          date: leaveApplicationDay,
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      localStorage.setItem("wiperLeaveRequests", JSON.stringify(parsedLeaveRequests));
 
       // Show success message
       toast("Leave application submitted");

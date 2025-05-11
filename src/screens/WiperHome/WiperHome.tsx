@@ -105,10 +105,14 @@ export const WiperHome = () => {
         const storedBookings = localStorage.getItem('wiperBookedJobs');
         const parsedBookings = storedBookings ? JSON.parse(storedBookings) : [];
         
-        // Convert bookings to the BookedJob format with a default "upcoming" status
+        // Get completions from localStorage
+        const completedJobs = localStorage.getItem("wiperCompletedJobs");
+        const parsedCompletedJobs = completedJobs ? JSON.parse(completedJobs) : {};
+        
+        // Convert bookings to the BookedJob format with status from localStorage
         const formattedBookings: BookedJob[] = parsedBookings.map((job: any) => ({
           ...job,
-          status: determineJobStatus(job.date, job.startTime)
+          status: determineJobStatus(job.id, job.date, job.startTime)
         }));
         
         // Generate mock data for ratings and stats
@@ -139,7 +143,7 @@ export const WiperHome = () => {
         const parsedBookings = JSON.parse(storedBookings);
         const formattedBookings: BookedJob[] = parsedBookings.map((job: any) => ({
           ...job,
-          status: determineJobStatus(job.date, job.startTime)
+          status: determineJobStatus(job.id, job.date, job.startTime)
         }));
         setBookedJobs(formattedBookings);
       }
@@ -150,7 +154,7 @@ export const WiperHome = () => {
   }, []);
   
   // Helper function to determine job status based on date and time
-  const determineJobStatus = (dateStr: string, timeStr: string): "upcoming" | "completed" | "in-progress" => {
+  const determineJobStatus = (jobId: string, dateStr: string, timeStr: string): "upcoming" | "completed" | "in-progress" => {
     const now = new Date();
     const jobDate = parseISO(dateStr);
     const [hours, minutes] = timeStr.split(':').map(Number);
@@ -161,12 +165,32 @@ export const WiperHome = () => {
     const jobEndTime = new Date(jobDateTime);
     jobEndTime.setHours(jobEndTime.getHours() + 1); // Assuming jobs last 1 hour
     
+    // Check if this job+date is marked as completed in localStorage
+    const completedJobs = localStorage.getItem("wiperCompletedJobs");
+    const parsedCompletedJobs = completedJobs ? JSON.parse(completedJobs) : {};
+    
+    // First check for today's date
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    // If this job has completion data for today in localStorage, it's completed
+    if (parsedCompletedJobs[jobId] && parsedCompletedJobs[jobId][today]) {
+      return "completed";
+    }
+    
+    // If this job has completion data for the job date in localStorage, it's also completed
+    if (parsedCompletedJobs[jobId] && parsedCompletedJobs[jobId][dateStr]) {
+      return "completed";
+    }
+    
+    // Otherwise determine based on time
     if (now < jobDateTime) {
       return "upcoming";
     } else if (now >= jobDateTime && now <= jobEndTime) {
       return "in-progress";
     } else {
-      return "completed";
+      // FIXED: Don't automatically mark past jobs as completed
+      // Instead, show jobs as pending/upcoming if they weren't explicitly marked complete
+      return "upcoming";
     }
   };
 
@@ -240,7 +264,7 @@ export const WiperHome = () => {
       case "in-progress":
         return { color: "bg-blue-100 text-blue-800", icon: <Package className="w-3.5 h-3.5" /> };
       default:
-        return { color: "bg-[#c5e82e]/20 text-black", icon: <Clock className="w-3.5 h-3.5" /> };
+        return { color: "bg-yellow-100 text-yellow-800", icon: <Clock className="w-3.5 h-3.5" /> };
     }
   };
 
@@ -451,6 +475,7 @@ export const WiperHome = () => {
                       .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
                       .map(job => {
                         const isToday = isSameDay(parseISO(job.date), new Date());
+                        const statusInfo = getStatusInfo(job.status);
                         
                         return (
                           <motion.div
@@ -472,6 +497,11 @@ export const WiperHome = () => {
                                     <Calendar className="w-3 h-3" />
                                     {isToday ? "Today" : format(parseISO(job.date), "MMM d")}
                                   </Badge>
+                                  
+<Badge className={`px-2 py-1 text-xs flex items-center ${statusInfo.color}`}>
+  {statusInfo.icon}
+  <span className="ml-1 capitalize">{job.status.replace('-', ' ')}</span>
+</Badge>
                                 </div>
                                 
                                 {/* Car details section */}
