@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Sparkles,
   ThumbsUp,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { toast } from "../../components/CustomToast";
 import WiperNavigation from "../../components/WiperNavigation";
@@ -58,6 +60,7 @@ export const WiperJobBooking = () => {
   const [confirmModal, setConfirmModal] = useState<string | null>(null);
   const [availableJobs, setAvailableJobs] = useState<JobSlot[]>([]);
   const [myBookings, setMyBookings] = useState<JobSlot[]>([]);
+  const [bookedJobIds, setBookedJobIds] = useState<string[]>([]);
 
   // Animation variants
   const cardVariants = {
@@ -84,12 +87,18 @@ export const WiperJobBooking = () => {
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
+        // Check for existing booked jobs
+        const storedBookings = localStorage.getItem('wiperBookedJobs');
+        const parsedBookings = storedBookings ? JSON.parse(storedBookings) : [];
+        setMyBookings(parsedBookings);
+        
+        // Extract IDs of already booked jobs
+        const bookedIds = parsedBookings.map((job: JobSlot) => job.id);
+        setBookedJobIds(bookedIds);
+        
         // Generate mock available jobs
         const mockAvailableJobs = generateMockAvailableJobs();
         setAvailableJobs(mockAvailableJobs);
-        
-        // Set initial bookings to empty
-        setMyBookings([]);
       } catch (error) {
         console.error("Error fetching jobs:", error);
         toast("Failed to load job data");
@@ -103,6 +112,13 @@ export const WiperJobBooking = () => {
 
   // Handle job selection/booking
   const handleSelectJob = async (jobId: string) => {
+    // Check if job is already booked
+    if (bookedJobIds.includes(jobId)) {
+      setConfirmModal(null);
+      toast("You've already booked this job");
+      return;
+    }
+    
     setLoading(true);
     try {
       // Simulate API call
@@ -123,7 +139,15 @@ export const WiperJobBooking = () => {
       };
       
       setAvailableJobs(updatedAvailableJobs);
-      setMyBookings(prev => [...prev, bookedJob]);
+      const updatedBookings = [...myBookings, bookedJob];
+      setMyBookings(updatedBookings);
+      setBookedJobIds([...bookedJobIds, jobId]);
+      
+      // Store in localStorage to share with WiperHome component
+      localStorage.setItem('wiperBookedJobs', JSON.stringify(updatedBookings));
+      
+      // Dispatch event to notify other tabs/components
+      window.dispatchEvent(new Event('storage'));
       
       // Close the confirm modal
       setConfirmModal(null);
@@ -269,6 +293,11 @@ export const WiperJobBooking = () => {
     return availableJobs;
   };
 
+  // Check if a job is already booked
+  const isJobBooked = (jobId: string) => {
+    return bookedJobIds.includes(jobId);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -328,49 +357,53 @@ export const WiperJobBooking = () => {
                     >
                       <div className="p-4 sm:p-5">
                         {/* Date, Plan Badge and Time info - improved mobile layout */}
-{/* Job header with plan, date and time */}
-<div className="mb-3">
-  <div className="flex flex-wrap items-center gap-2 mb-2">
-    <Badge className="bg-[#c5e82e] text-black px-2 py-1 text-xs">
-      {job.planName}
-    </Badge>
-    <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs">
-      {job.startTime} - {job.endTime}
-    </Badge>
-  </div>
-  
-  {/* Car details section with improved layout */}
-  <div className="flex justify-between items-start mt-1">
-    <div>
-      <h3 className="font-medium text-base mb-1.5 ml-1">
-        {job.carDetails.make} {job.carDetails.model}
-      </h3>
-      <div className="flex flex-wrap items-center gap-2 mb-2">
-        <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-600 text-xs">
-          {job.carDetails.type}
-        </Badge>
-        <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-600 text-xs font-mono">
-          {job.carDetails.regNumber}
-        </Badge>
-       
-      </div>
-       <span className="text-xs text-gray-500 flex items-center">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-300 mr-1 ml-2"></span>
-          Block A
-        </span>
-    </div>
-    <div className="text-right mt-1.5">
-      <div className="text-lg font-bold text-black">
-        ₹1000
-      </div>
-      {job.planFrequency && (
-        <div className="text-xs text-gray-500">
-          {job.planFrequency}
-        </div>
-      )}
-    </div>
-  </div>
-</div>
+                        {/* Job header with plan, date and time */}
+                        <div className="mb-3">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <Badge className="bg-[#c5e82e] text-black px-2 py-1 text-xs">
+                              {job.planName}
+                            </Badge>
+                            <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs">
+                              {job.startTime} - {job.endTime}
+                            </Badge>
+                            <Badge variant="outline" className="border-gray-200 text-gray-600 text-xs flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {format(parseISO(job.date), "MMM d")}
+                            </Badge>
+                          </div>
+                          
+                          {/* Car details section with improved layout */}
+                          <div className="flex justify-between items-start mt-1">
+                            <div>
+                              <h3 className="font-medium text-base mb-1.5 ml-1">
+                                {job.carDetails.make} {job.carDetails.model}
+                              </h3>
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-600 text-xs">
+                                  {job.carDetails.type}
+                                </Badge>
+                                <Badge variant="outline" className="border-gray-200 bg-gray-50 text-gray-600 text-xs font-mono">
+                                  {job.carDetails.regNumber}
+                                </Badge>
+                              
+                              </div>
+                              <span className="text-xs text-gray-500 flex items-center">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-300 mr-1 ml-2"></span>
+                                Block A
+                              </span>
+                            </div>
+                            <div className="text-right mt-1.5">
+                              <div className="text-lg font-bold text-black">
+                                ₹{job.payment}
+                              </div>
+                              {job.planFrequency && (
+                                <div className="text-xs text-gray-500">
+                                  {job.planFrequency}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                         
                         {/* Separator - added more margin */}
                         <Separator className="my-4" />
@@ -393,24 +426,45 @@ export const WiperJobBooking = () => {
                           </div>
                         )}
                         
-                        {/* Available note - better padding */}
-                        <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-100 flex items-start mb-4">
-                          <BellRing className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                          <div className="text-xs text-blue-800">
-                            <span className="font-medium">Notice: </span>
-                            Booking this job will add it to your schedule.
+                        {/* Available note or Already Booked note - better padding */}
+                        {isJobBooked(job.id) ? (
+                          <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-100 flex items-start mb-4">
+                            <CheckCircle className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
+                            <div className="text-xs text-green-800">
+                              <span className="font-medium">Already Booked: </span>
+                              You've already booked this job. View it in your dashboard.
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-100 flex items-start mb-4">
+                            <BellRing className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                            <div className="text-xs text-blue-800">
+                              <span className="font-medium">Notice: </span>
+                              Booking this job will add it to your schedule.
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Book job button */}
                         <div className="flex justify-center sm:justify-end">
-                          <Button
-                            className="bg-[#c5e82e] hover:bg-[#b3d429] text-black shadow-sm text-xs py-2 w-full sm:w-auto"
-                            onClick={() => setConfirmModal(job.id)}
-                          >
-                            <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />
-                            Book This Job
-                          </Button>
+                          {isJobBooked(job.id) ? (
+                            <Button
+                              variant="outline"
+                              className="border-green-200 text-green-700 bg-green-50 hover:bg-green-100 shadow-sm text-xs py-2 w-full sm:w-auto"
+                              onClick={() => navigate('/wiper-home')}
+                            >
+                              <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                              View in Dashboard
+                            </Button>
+                          ) : (
+                            <Button
+                              className="bg-[#c5e82e] hover:bg-[#b3d429] text-black shadow-sm text-xs py-2 w-full sm:w-auto"
+                              onClick={() => setConfirmModal(job.id)}
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5 mr-1.5" />
+                              Book This Job
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -442,40 +496,69 @@ export const WiperJobBooking = () => {
               className="bg-white rounded-2xl w-full max-w-md p-6"
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 bg-[#ebf5d3] rounded-full flex items-center justify-center">
-                  <Car className="w-6 h-6 text-[#c5e82e]" />
-                </div>
-              </div>
-              
-              <h3 className="text-xl font-bold text-center mb-2">Confirm Booking</h3>
-              <p className="text-gray-600 text-center mb-6">
-                Are you sure you want to book this cleaning job? This will add it to your schedule.
-              </p>
-              
-              <div className="flex gap-3 flex-col sm:flex-row">
-                <Button
-                  variant="outline"
-                  className="flex-1 py-2.5"
-                  onClick={() => setConfirmModal(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="flex-1 bg-[#c5e82e] hover:bg-[#b3d429] text-black py-2.5"
-                  onClick={() => handleSelectJob(confirmModal)}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    "Yes, Book This Job"
-                  )}
-                </Button>
-              </div>
+              {isJobBooked(confirmModal) ? (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-center mb-2">Already Booked</h3>
+                  <p className="text-gray-600 text-center mb-6">
+                    You've already booked this job. You can view it in your dashboard.
+                  </p>
+                  
+                  <div className="flex justify-center">
+                    <Button
+                      className="bg-[#c5e82e] hover:bg-[#b3d429] text-black py-2.5 px-6"
+                      onClick={() => {
+                        setConfirmModal(null);
+                        navigate('/');
+                      }}
+                    >
+                      Go to Dashboard
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <div className="w-12 h-12 bg-[#ebf5d3] rounded-full flex items-center justify-center">
+                      <Car className="w-6 h-6 text-[#c5e82e]" />
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-center mb-2">Confirm Booking</h3>
+                  <p className="text-gray-600 text-center mb-6">
+                    Are you sure you want to book this cleaning job? This will add it to your schedule.
+                  </p>
+                  
+                  <div className="flex gap-3 flex-col sm:flex-row">
+                    <Button
+                      variant="outline"
+                      className="flex-1 py-2.5"
+                      onClick={() => setConfirmModal(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1 bg-[#c5e82e] hover:bg-[#b3d429] text-black py-2.5"
+                      onClick={() => handleSelectJob(confirmModal)}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        "Yes, Book This Job"
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

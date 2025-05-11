@@ -477,52 +477,6 @@ export const WiperReferral = () => {
               </Tabs>
             </motion.div>
             
-            {/* Referral Quick Links */}
-            <motion.div variants={itemVariants}>
-              <div className="mt-2">
-                <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">Quick Links</h3>
-                
-                <Card className="overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="divide-y divide-gray-100">
-                      <a 
-                        href="#" 
-                        className="flex items-center justify-between w-full p-3 sm:p-4 hover:bg-gray-50 text-left"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate('/refer-faq');
-                        }}
-                      >
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
-                          </div>
-                          <span className="text-sm sm:text-base font-medium">Referral FAQs</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                      </a>
-                      
-                      <a 
-                        href="#" 
-                        className="flex items-center justify-between w-full p-3 sm:p-4 hover:bg-gray-50 text-left"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate('/referral-terms');
-                        }}
-                      >
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                            <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
-                          </div>
-                          <span className="text-sm sm:text-base font-medium">Terms & Conditions</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                      </a>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </motion.div>
           </motion.div>
         )}
       </div>

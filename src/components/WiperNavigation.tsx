@@ -29,11 +29,6 @@ export const WiperNavigation = () => {
       path: "/wiper-referral"
     },
     {
-      name: "History",
-      icon: <Clock className="w-[18px] h-[18px] sm:w-5 sm:h-5" />,
-      path: "/wiper-history"
-    },
-    {
       name: "Profile",
       icon: <User className="w-[18px] h-[18px] sm:w-5 sm:h-5" />,
       path: "/wiper-profile"
