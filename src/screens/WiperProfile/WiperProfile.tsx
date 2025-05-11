@@ -13,7 +13,6 @@ import {
   BanknoteIcon,
   LogOut,
   HelpCircle,
-  Settings,
   ChevronRight,
   Bell,
   Shield,
@@ -204,11 +203,14 @@ export const WiperProfile = () => {
               variants={itemVariants}
               className="relative bg-gradient-to-r from-gray-900 to-black rounded-xl overflow-hidden p-6 text-white"
             >
+              {/* Curved decorative element - just adding this part */}
+              <div className="absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br from-[#c5e82e]/20 to-transparent rounded-full blur-2xl -mt-10 -mr-10 opacity-60"></div>
+              
               {/* Profile Image with edit button */}
               <div className="flex flex-col items-center sm:items-start sm:flex-row pb-6">
                 <div className="relative group mb-4 sm:mb-0 sm:mr-4">
                   <div 
-                    className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#c5e82e] bg-white flex items-center justify-center"
+                    className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#c5e82e] bg-white flex items-center justify-center mr-3"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {profileData.user?.profileImage ? (
@@ -289,48 +291,6 @@ export const WiperProfile = () => {
               </div>
             </motion.div>
 
-            {/* Performance Stats */}
-            <motion.div variants={itemVariants}>
-              <h3 className="text-lg font-semibold mb-3 flex items-center">
-                <Star className="w-5 h-5 mr-2 text-[#c5e82e]" />
-                Performance Stats
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Card className="bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">Rating</p>
-                    <div className="flex items-end">
-                      <p className="text-2xl font-bold">{wiperStats.rating}</p>
-                      <div className="ml-1 mb-1">
-                        <Star className="w-4 h-4 text-yellow-500 inline-block" fill="currentColor" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">Jobs Completed</p>
-                    <p className="text-2xl font-bold">{wiperStats.jobsCompleted}</p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">Total Earnings</p>
-                    <p className="text-2xl font-bold">₹{wiperStats.totalEarnings.toLocaleString()}</p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-white shadow-sm">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500 mb-1">Avg. Time/Job</p>
-                    <p className="text-2xl font-bold">{wiperStats.averageTime}</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </motion.div>
-
             {/* Payment Information */}
             <motion.div variants={itemVariants}>
               <h3 className="text-lg font-semibold mb-3 flex items-center">
@@ -378,6 +338,7 @@ export const WiperProfile = () => {
                           variant="ghost" 
                           size="sm"
                           className="text-xs text-[#c5e82e] hover:text-[#a5c824] hover:bg-[#c5e82e]/10"
+                          onClick={() => navigate('/payment-details')}
                         >
                           <Edit className="w-3.5 h-3.5 mr-1" />
                           Edit Details
@@ -415,6 +376,7 @@ export const WiperProfile = () => {
                           variant="ghost" 
                           size="sm"
                           className="text-xs text-[#c5e82e] hover:text-[#a5c824] hover:bg-[#c5e82e]/10"
+                          onClick={() => navigate('/payment-details')}
                         >
                           <Edit className="w-3.5 h-3.5 mr-1" />
                           Edit Details
@@ -428,6 +390,7 @@ export const WiperProfile = () => {
                         variant="outline" 
                         size="sm" 
                         className="mt-2"
+                        onClick={() => navigate('/payment-details')}
                       >
                         Add Payment Details
                       </Button>

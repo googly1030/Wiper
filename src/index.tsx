@@ -16,6 +16,8 @@ import {WiperJobBooking} from "./screens/WiperJobBooking/WiperJobBooking";
 import {WiperHome} from "./screens/WiperHome/WiperHome";
 import WiperHistory from './screens/WiperHistory/WiperHistory';
 import { WiperProfile } from './screens/WiperProfile/WiperProfile';
+import PaymentDetailsSetup from "./screens/PaymentDetailsSetup/PaymentDetailsSetup";
+import { WiperReferral } from "./screens/WiperReferral/WiperReferral";
 import "./index.css";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
@@ -64,6 +66,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
         <Route path="/wiper-profile" element={
             <WiperProfile />
         } />
+        <Route path="/wiper-referral" element={<WiperReferral />} />
+        <Route path="/payment-details" element={<PaymentDetailsSetup />} />
       </Routes>
     </Router>
   </StrictMode>

@@ -62,6 +62,13 @@ const [tempAddress, setTempAddress] = useState<string | null>(null);
   const [idDocumentUploaded, setIdDocumentUploaded] = useState(false);
   const [documentName, setDocumentName] = useState("");
 
+  // Add this state variable with your other state variables
+  const [referralCode, setReferralCode] = useState("");
+  const [referralStatus, setReferralStatus] = useState<{
+    isValid: boolean | null;
+    referrerName: string | null;
+  }>({ isValid: null, referrerName: null });
+
   // Get user data from localStorage if available
   useEffect(() => {
     try {
@@ -347,11 +354,74 @@ const [tempAddress, setTempAddress] = useState<string | null>(null);
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setProfile(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'idNumber') {
+      setProfile(prev => ({
+        ...prev,
+        [name]: formatIdNumber(value)
+      }));
+    } else {
+      setProfile(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
+
+  // Validate ID number format based on type
+const validateIdNumber = () => {
+  if (!profile.idNumber) {
+    setErrorMessage(`Please enter your ${profile.idType === 'aadhar' ? 'Aadhaar' : profile.idType === 'pan' ? 'PAN' : 'Driving License'} number`);
+    return false;
+  }
+
+  let isValid = false;
+  let errorMsg = '';
+
+  switch (profile.idType) {
+    case 'aadhar':
+      // Exactly 12 digits
+      isValid = /^\d{12}$/.test(profile.idNumber);
+      errorMsg = 'Aadhaar number must be exactly 12 digits';
+      break;
+    case 'pan':
+      // 5 letters, 4 digits, 1 letter (case insensitive for input, but convert to uppercase)
+      isValid = /^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/.test(profile.idNumber);
+      errorMsg = 'PAN number must be in format: ABCDE1234F';
+      break;
+    case 'driving_license':
+      // 2 letters (state code) + 2 digits (RTO code) + 11-13 digits (ignoring spaces)
+      isValid = /^[A-Za-z]{2}[0-9]{2}[0-9]{11,13}$/.test(profile.idNumber.replace(/\s/g, ''));
+      errorMsg = 'Driving License should be in format: XX99 followed by 11-13 digits';
+      break;
+  }
+
+  if (!isValid) {
+    setErrorMessage(errorMsg);
+  } else {
+    setErrorMessage('');
+  }
+
+  return isValid;
+};
+
+// Format ID number as user types
+const formatIdNumber = (value: string) => {
+  // Remove any spaces or special characters
+  const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '');
+  
+  if (profile.idType === 'pan') {
+    // Convert to uppercase for PAN
+    return cleanValue.toUpperCase();
+  } else if (profile.idType === 'driving_license') {
+    // Format DL with a space after first 4 characters
+    if (cleanValue.length > 4) {
+      return `${cleanValue.slice(0, 4)} ${cleanValue.slice(4)}`;
+    }
+  }
+  
+  return cleanValue;
+};
 
   // Handle step navigation
   const goToNextStep = () => {
@@ -369,32 +439,55 @@ const [tempAddress, setTempAddress] = useState<string | null>(null);
       }
       setErrorMessage("");
     } else if (currentStep === 3) {
-      if (!profile.idNumber) {
-        setErrorMessage(`Please enter your ${profile.idType.toUpperCase()} number`);
+      // This step validation is kept, but we no longer progress beyond it
+      if (!validateIdNumber()) {
         return;
       }
-      setErrorMessage("");
-    } else if (currentStep === 5) {
-      if (profile.paymentPreference === 'bank') {
-        if (!profile.bankName || !profile.accountNumber || !profile.ifscCode) {
-          setErrorMessage("Please fill all bank details");
-          return;
-        }
-      } else if (profile.paymentPreference === 'upi') {
-        if (!profile.upiId) {
-          setErrorMessage("Please enter your UPI ID");
-          return;
-        }
+      
+      if (!idDocumentUploaded) {
+        setErrorMessage(`Please upload your ${profile.idType === 'aadhar' ? 'Aadhaar' : profile.idType === 'pan' ? 'PAN' : 'Driving License'} document`);
+        return;
       }
       setErrorMessage("");
     }
 
-    setCurrentStep(prev => Math.min(5, prev + 1));
+    // Only go up to step 3
+    setCurrentStep(prev => Math.min(3, prev + 1));
   };
 
   const goToPreviousStep = () => {
     setCurrentStep(prev => Math.max(1, prev - 1));
     setErrorMessage("");
+  };
+
+  // Add this function to validate referral code
+  const validateReferralCode = async (code: string) => {
+    if (!code) {
+      setReferralStatus({ isValid: null, referrerName: null });
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      // In a real app, you would check against your backend
+      // For demo purposes, we'll simulate validation
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Fake validation logic - in real app this would be a backend call
+      if (code.startsWith('WIPER') && code.length >= 8) {
+        setReferralStatus({ 
+          isValid: true, 
+          referrerName: "Rahul Kumar" 
+        });
+      } else {
+        setReferralStatus({ isValid: false, referrerName: null });
+      }
+    } catch (error) {
+      console.error("Error validating referral code:", error);
+      setReferralStatus({ isValid: false, referrerName: null });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle form submission
@@ -406,7 +499,7 @@ const [tempAddress, setTempAddress] = useState<string | null>(null);
       // In a real app, you would save this data to your database
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock saving data to localStorage
+      // Mock saving data to localStorage - modified to remove location and payments
       const wiperSession = JSON.parse(localStorage.getItem('wiperSession') || '{}');
       const updatedSession = {
         ...wiperSession,
@@ -416,18 +509,31 @@ const [tempAddress, setTempAddress] = useState<string | null>(null);
           profileImage: profileImage,
           idType: profile.idType,
           idNumber: profile.idNumber,
-          location: location,
-          paymentDetails: {
-            preference: profile.paymentPreference,
-            bankName: profile.bankName,
-            accountNumber: profile.accountNumber,
-            ifscCode: profile.ifscCode,
-            upiId: profile.upiId
-          },
+          referralCode: referralCode || null, // Save the referral code
           onboarded: true
         }
       };
       
+      // In WiperProfileSetup.tsx, inside the handleSubmit function:
+      if (referralCode && referralStatus.isValid) {
+        // Record that this user was referred by someone
+        const referralTracking = JSON.parse(localStorage.getItem('referralTracking') || '[]');
+        referralTracking.push({
+          id: Date.now(),
+          fullName: profile.fullName,
+          userType: 'wiper',
+          referredBy: referralCode,
+          referralDate: new Date().toISOString(),
+          referralPaid: false
+        });
+        localStorage.setItem('referralTracking', JSON.stringify(referralTracking));
+        
+        // Also update the user session
+        wiperSession.user.referredBy = referralCode;
+        wiperSession.user.referralDate = new Date().toISOString();
+        localStorage.setItem('wiperSession', JSON.stringify(wiperSession));
+      }
+
       localStorage.setItem('wiperSession', JSON.stringify(updatedSession));
       
       toast("Profile setup completed successfully!");
@@ -636,14 +742,14 @@ const [tempAddress, setTempAddress] = useState<string | null>(null);
       <div className="w-full mb-8">
         <div className="flex justify-between mb-2">
           <span className="text-xs font-medium text-gray-500">Setup Progress</span>
-          <span className="text-xs font-medium text-black">{Math.round((currentStep / 5) * 100)}%</span>
+          <span className="text-xs font-medium text-black">{Math.round((currentStep / 3) * 100)}%</span>
         </div>
         <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">
           <motion.div 
             className="h-full bg-gradient-to-r from-[#c5e82e] to-[#a5c824] transition-all duration-300 ease-out"
-            style={{ width: `${(currentStep / 5) * 100}%` }}
+            style={{ width: `${(currentStep / 3) * 100}%` }}
             initial={{ width: 0 }}
-            animate={{ width: `${(currentStep / 5) * 100}%` }}
+            animate={{ width: `${(currentStep / 3) * 100}%` }}
             transition={{ duration: 0.5 }}
           />
         </div>
@@ -651,518 +757,350 @@ const [tempAddress, setTempAddress] = useState<string | null>(null);
       </div>
     );
   };
-  // Render step content
-  const renderStepContent = () => {
-    switch (currentStep) {
-// Update the renderStepContent function's case 1:
-case 1:
-  return (
-    <motion.div 
-      key="step1"
-      variants={fadeVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="space-y-6"
-    >
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Welcome to Wiper!</h2>
-        <p className="text-gray-600">Let's set up your profile to get you started</p>
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-700">
-          Full Name
-        </label>
-        <div className="relative group">
-          <Input
-            type="text"
-            name="fullName"
-            value={profile.fullName}
-            onChange={handleInputChange}
-            placeholder="Enter your full name"
-            className="pl-10 py-6 rounded-xl bg-gray-50 hover:bg-white focus:bg-white transition-colors border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20 group-hover:border-gray-300"
-          />
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-gray-500">
-            <UserCheck className="w-5 h-5" />
-          </div>
-          <motion.div
-            className="h-0.5 bg-gradient-to-r from-[#c5e82e] to-[#a5c824] mt-0.5 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: profile.fullName ? "100%" : "0%" }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-        <p className="text-xs text-gray-500">This is how customers will see you in the app</p>
-      </div>
-    </motion.div>
-  );
-      
-// Update the renderStepContent function's case 2:
-case 2:
-  return (
-    <motion.div 
-      key="step2"
-      variants={fadeVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="space-y-6"
-    >
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Add Profile Photo</h2>
-        <p className="text-gray-600">Upload a clear photo of yourself</p>
-      </div>
-
-      <div className="flex justify-center mt-4">
-        <div 
-          className="relative group cursor-pointer" 
-          onClick={() => fileInputRef.current?.click()}
+  // Update the renderStepContent function to only include 3 steps
+const renderStepContent = () => {
+  switch (currentStep) {
+    case 1:
+      // Full name step (unchanged)
+      return (
+        <motion.div 
+          key="step1"
+          variants={fadeVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="space-y-6"
         >
-          <div className={`w-36 h-36 rounded-full overflow-hidden shadow-md ${
-            profileImage ? 'border-2 border-[#c5e82e]' : 'border-2 border-gray-300 border-dashed'
-          }`}>
-            {profileImage ? (
-              <img 
-                src={profileImage} 
-                alt="Profile" 
-                className="w-full h-full object-cover"
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold">Welcome to Wiper!</h2>
+            <p className="text-gray-600">Let's set up your profile to get you started</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">
+              Full Name
+            </label>
+            <div className="relative group">
+              <Input
+                type="text"
+                name="fullName"
+                value={profile.fullName}
+                onChange={handleInputChange}
+                placeholder="Enter your full name"
+                className="pl-10 py-6 rounded-xl bg-gray-50 hover:bg-white focus:bg-white transition-colors border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20 group-hover:border-gray-300"
               />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
-                <Camera className="w-10 h-10 text-gray-400 mb-2" />
-                <span className="text-xs text-gray-500 text-center px-2">
-                  Tap to upload
-                </span>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-gray-500">
+                <UserCheck className="w-5 h-5" />
               </div>
+              <motion.div
+                className="h-0.5 bg-gradient-to-r from-[#c5e82e] to-[#a5c824] mt-0.5 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: profile.fullName ? "100%" : "0%" }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+            <p className="text-xs text-gray-500">This is how customers will see you in the app</p>
+          </div>
+
+          {/* Referral Code Input - Add this in step 1 after the fullName input field */}
+          <div className="space-y-1.5 mt-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Referral Code <span className="text-gray-500 text-xs">(Optional)</span>
+            </label>
+            <div className="relative group">
+              <Input
+                type="text"
+                value={referralCode}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase().trim();
+                  setReferralCode(value);
+                  if (value.length >= 6) {
+                    validateReferralCode(value);
+                  } else {
+                    setReferralStatus({ isValid: null, referrerName: null });
+                  }
+                }}
+                placeholder="Enter referral code (if any)"
+                className={`py-6 rounded-xl bg-gray-50 hover:bg-white focus:bg-white transition-colors border-gray-200 
+                  ${referralStatus.isValid === true ? 'border-green-500 focus:border-green-500 focus:ring-green-200' : 
+                    referralStatus.isValid === false ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 
+                    'focus:border-[#c5e82e] focus:ring-[#c5e82e]/20'}`}
+              />
+              {referralCode && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {referralStatus.isValid === true ? (
+                    <div className="h-6 w-6 bg-green-100 rounded-full flex items-center justify-center">
+                      <Check className="h-4 w-4 text-green-600" />
+                    </div>
+                  ) : referralStatus.isValid === false ? (
+                    <div className="h-6 w-6 bg-red-100 rounded-full flex items-center justify-center">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                    </div>
+                  ) : (
+                    // Loading state when validating
+                    <div className="h-6 w-6 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {referralStatus.isValid === true && referralStatus.referrerName && (
+              <p className="text-xs text-green-600 flex items-center mt-2">
+                <Check className="h-3 w-3 mr-1" />
+                Code valid! Referred by {referralStatus.referrerName}
+              </p>
             )}
+            {referralStatus.isValid === false && (
+              <p className="text-xs text-red-500 flex items-center mt-2">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Invalid referral code. Please check and try again.
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Enter a referral code if someone referred you to join Wiper
+            </p>
           </div>
-          
-          {/* Overlay effect on hover */}
-          <div className="absolute inset-0 rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-            <div className="bg-white bg-opacity-80 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800">
-              {profileImage ? 'Change' : 'Upload'}
-            </div>
+        </motion.div>
+      );
+      
+    case 2:
+      // Profile photo step (unchanged)
+      return (
+        <motion.div 
+          key="step2"
+          variants={fadeVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="space-y-6"
+        >
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold">Add Profile Photo</h2>
+            <p className="text-gray-600">Upload a clear photo of yourself</p>
           </div>
-          
-          {uploading && (
-            <div className="absolute inset-0 rounded-full bg-black bg-opacity-60 flex items-center justify-center">
-              <div className="w-8 h-8 border-3 border-[#c5e82e] border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          )}
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleProfileImageChange}
-            disabled={uploading}
-          />
-        </div>
-      </div>
 
-      <p className="text-center text-sm text-gray-600 mt-4">
-        Your profile photo helps build trust with customers
-      </p>
-    </motion.div>
-  );
-      case 3:
-        return (
-          <motion.div 
-            key="step3"
-            variants={fadeVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="space-y-6"
-          >
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold">ID Verification</h2>
-              <p className="text-gray-600">Verify your identity with valid ID proof</p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  ID Type
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'aadhar', label: 'Aadhar' },
-                    { id: 'pan', label: 'PAN Card' },
-                    { id: 'driving_license', label: 'Driving License' }
-                  ].map(option => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setProfile(prev => ({ ...prev, idType: option.id }))}
-                      className={`py-2 px-3 text-sm rounded-lg border ${
-                        profile.idType === option.id 
-                          ? 'bg-[#c5e82e]/20 border-[#c5e82e] text-black font-medium' 
-                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+          <div className="flex justify-center mt-4">
+            <div 
+              className="relative group cursor-pointer" 
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className={`w-36 h-36 rounded-full overflow-hidden shadow-md ${
+                profileImage ? 'border-2 border-[#c5e82e]' : 'border-2 border-gray-300 border-dashed'
+              }`}>
+                {profileImage ? (
+                  <img 
+                    src={profileImage} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <Camera className="w-10 h-10 text-gray-400 mb-2" />
+                    <span className="text-xs text-gray-500 text-center px-2">
+                      Tap to upload
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Overlay effect on hover */}
+              <div className="absolute inset-0 rounded-full bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <div className="bg-white bg-opacity-80 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-800">
+                  {profileImage ? 'Change' : 'Upload'}
                 </div>
               </div>
+              
+              {uploading && (
+                <div className="absolute inset-0 rounded-full bg-black bg-opacity-60 flex items-center justify-center">
+                  <div className="w-8 h-8 border-3 border-[#c5e82e] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfileImageChange}
+                disabled={uploading}
+              />
+            </div>
+          </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700">
-                  {profile.idType === 'aadhar' ? 'Aadhar Number' : 
-                   profile.idType === 'pan' ? 'PAN Number' : 'License Number'}
-                </label>
+          <p className="text-center text-sm text-gray-600 mt-4">
+            Your profile photo helps build trust with customers
+          </p>
+        </motion.div>
+      );
+      
+    case 3:
+      // ID verification step (unchanged)
+      return (
+        <motion.div 
+          key="step3"
+          variants={fadeVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="space-y-6"
+        >
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold">ID Verification</h2>
+            <p className="text-gray-600">Verify your identity with valid ID proof</p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                ID Type
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'aadhar', label: 'Aadhar' },
+                  { id: 'pan', label: 'PAN Card' },
+                  { id: 'driving_license', label: 'Driving License' }
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setProfile(prev => ({ ...prev, idType: option.id }))}
+                    className={`py-2 px-3 text-sm rounded-lg border ${
+                      profile.idType === option.id 
+                        ? 'bg-[#c5e82e]/20 border-[#c5e82e] text-black font-medium' 
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                {profile.idType === 'aadhar' ? 'Aadhaar Number' : 
+                 profile.idType === 'pan' ? 'PAN Number' : 'Driving License Number'}
+              </label>
+              <div className="relative">
                 <Input
                   type="text"
                   name="idNumber"
                   value={profile.idNumber}
                   onChange={handleInputChange}
-                  placeholder={`Enter your ${profile.idType} number`}
-                  className="py-6 rounded-xl bg-gray-50 hover:bg-white focus:bg-white transition-colors"
+                  placeholder={profile.idType === 'aadhar' ? 'Enter 12-digit Aadhaar number' : 
+                               profile.idType === 'pan' ? 'Enter PAN (e.g., ABCDE1234F)' : 
+                               'Enter Driving License number'}
+                  className={`py-6 rounded-xl bg-gray-50 hover:bg-white focus:bg-white transition-colors ${
+                    profile.idNumber && (
+                      /^\d{12}$/.test(profile.idNumber) && profile.idType === 'aadhar' || 
+                      /^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/.test(profile.idNumber) && profile.idType === 'pan' ||
+                      /^[A-Za-z]{2}[0-9]{2}[0-9]{11,13}$/.test(profile.idNumber.replace(/\s/g, '')) && profile.idType === 'driving_license'
+                    )
+                      ? 'border-green-500 focus:border-green-500 focus:ring-green-200' 
+                      : profile.idNumber 
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                        : 'border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20'
+                  }`}
+                  maxLength={profile.idType === 'aadhar' ? 12 : profile.idType === 'pan' ? 10 : 20}
                 />
-              </div>
-
-              <div className="mt-2">
-                <div className={`border-2 rounded-lg overflow-hidden transition-all ${
-                  idDocumentUploaded 
-                    ? 'border-[#c5e82e] bg-[#c5e82e]/5 shadow-md' 
-                    : 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100'
-                }`}>
-                  {idDocumentUploaded ? (
-                    // Uploaded state
-                    <div className="p-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-[#c5e82e]/20 flex items-center justify-center mr-3">
-                          <Check className="w-5 h-5 text-[#c5e82e]" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{documentName}</p>
-                          <p className="text-xs text-gray-500">Document uploaded successfully</p>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => document.getElementById('id-upload')?.click()}
-                          className="text-xs font-medium text-[#c5e82e] hover:text-[#a5c824]"
-                        >
-                          Change
-                        </button>
+                {profile.idNumber && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {(
+                      /^\d{12}$/.test(profile.idNumber) && profile.idType === 'aadhar' || 
+                      /^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/.test(profile.idNumber) && profile.idType === 'pan' ||
+                      /^[A-Za-z]{2}[0-9]{2}[0-9]{11,13}$/.test(profile.idNumber.replace(/\s/g, '')) && profile.idType === 'driving_license'
+                    ) ? (
+                      <div className="h-6 w-6 bg-green-100 rounded-full flex items-center justify-center">
+                        <Check className="h-4 w-4 text-green-600" />
                       </div>
-                    </div>
-                  ) : (
-                    // Not uploaded state
-                    <label 
-                      className="flex items-center justify-center w-full h-32 cursor-pointer"
-                      htmlFor="id-upload"
-                    >
-                      {uploading ? (
-                        // Uploading state
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="w-10 h-10 mb-2 border-3 border-[#c5e82e] border-t-transparent rounded-full animate-spin"></div>
-                          <p className="text-sm font-medium text-gray-600">Uploading document...</p>
-                        </div>
-                      ) : (
-                        // Default state
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                          <p className="text-sm text-gray-500">
-                            <span className="font-medium">Upload {profile.idType} document</span>
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            JPG, PNG or PDF (max 5MB)
-                          </p>
-                        </div>
-                      )}
-                    </label>
-                  )}
-                  <input 
-                    id="id-upload"
-                    type="file"
-                    className="hidden"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={handleIdUpload}
-                    disabled={uploading}
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        );
-      
-
-        case 4:
-          return (
-            <motion.div 
-              key="step4"
-              variants={fadeVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="space-y-6"
-            >
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Location Access</h2>
-                <p className="text-gray-600">We need your location to find jobs near you</p>
-              </div>
-        
-              <div className="p-6 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center space-y-4">
-                <div className="p-3.5 bg-[#c5e82e]/20 rounded-full">
-                  <MapPin className="w-8 h-8 text-[#c5e82e]" />
-                </div>
-                
-                {location.address ? (
-                  <div className="text-center w-full">
-                    <div className="flex items-center justify-center space-x-2 text-green-600 font-medium mb-3">
-                      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                        <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <div className="h-6 w-6 bg-red-100 rounded-full flex items-center justify-center">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
                       </div>
-                      <span>Location set successfully</span>
-                    </div>
-                    
-                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                      <p className="text-gray-800 font-medium">
-                        {location.address}
-                      </p>
-                      {location.latitude && location.longitude && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Lat: {location.latitude?.toFixed(6)}, Lng: {location.longitude?.toFixed(6)}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <button 
-                      onClick={() => setLocation({ latitude: null, longitude: null, address: null })}
-                      className="text-sm text-red-500 hover:text-red-600 mt-3 flex items-center justify-center mx-auto"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                      Change location
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center space-y-4 w-full">
-                    <p className="text-gray-700 font-medium">
-                      Choose how to set your location
-                    </p>
-                    
-                    <div className="flex flex-col gap-3">
-                      <Button
-                        onClick={handleGetLocation}
-                        disabled={locationLoading}
-                        className="bg-black text-white hover:bg-gray-800 rounded-xl py-5 w-full shadow-md hover:shadow-lg transition-all"
-                      >
-                        {locationLoading ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                            Getting Location...
-                          </>
-                        ) : (
-                          <>
-                            <MapPin className="w-5 h-5 mr-2" />
-                            Use Current Location
-                          </>
-                        )}
-                      </Button>
-                      
-                      <div className="relative mt-2">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="px-2 bg-white text-gray-500">or enter manually</span>
-                        </div>
-                      </div>
-                      <div className="space-y-3 mt-2">
-  <div className="relative">
-    <Input
-      type="text"
-      placeholder="Enter your full address"
-      className="py-5 px-4 rounded-xl bg-white border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20"
-      onChange={(e) => {
-        setTempAddress(e.target.value);
-      }}
-      value={tempAddress || ''}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && tempAddress?.trim()) {
-          e.preventDefault();
-          setLocation({
-            latitude: null,
-            longitude: null,
-            address: tempAddress.trim()
-          });
-        }
-      }}
-    />
-    <button
-      type="button"
-      onClick={() => {
-        if (tempAddress?.trim()) {
-          setLocation({
-            latitude: null,
-            longitude: null,
-            address: tempAddress.trim()
-          });
-        }
-      }}
-      className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#c5e82e] text-black p-1.5 rounded-lg hover:bg-[#b2cc2b] transition-colors"
-      disabled={!tempAddress?.trim()}
-    >
-      <Check className="w-4 h-4" />
-    </button>
-  </div>
-  <p className="text-xs text-gray-500 text-center">
-    Please include city, state and country for better job matching
-  </p>
-</div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
-        
-              <p className="text-center text-sm text-gray-500">
-                Your location helps us match you with nearby vehicles
+              <p className="text-xs text-gray-500">
+                {profile.idType === 'aadhar' 
+                  ? 'Must be a valid 12-digit Aadhaar number'
+                  : profile.idType === 'pan'
+                    ? 'Format: 5 letters + 4 digits + 1 letter (ABCDE1234F)'
+                    : 'Usually 2 letters + 2 digits + 11-13 digits'}
               </p>
-            </motion.div>
-          );
-case 5:
-  return (
-    <motion.div 
-      key="step5"
-      variants={fadeVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="space-y-6"
-    >
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Payment Details</h2>
-        <p className="text-gray-600">How would you like to receive payments?</p>
-      </div>
-
-      <div className="space-y-5">
-        <div className="flex space-x-3">
-          <button
-            type="button"
-            onClick={() => setProfile(prev => ({ ...prev, paymentPreference: 'bank' }))}
-            className={`flex-1 flex flex-col items-center justify-center space-y-2 py-4 px-4 rounded-xl border transition-all ${
-              profile.paymentPreference === 'bank'
-                ? 'bg-[#c5e82e]/15 border-[#c5e82e] shadow-md'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              profile.paymentPreference === 'bank' ? 'bg-[#c5e82e]/20' : 'bg-gray-100'
-            }`}>
-              <BanknoteIcon className={`w-6 h-6 ${profile.paymentPreference === 'bank' ? 'text-[#c5e82e]' : 'text-gray-400'}`} />
             </div>
-            <span className={`${profile.paymentPreference === 'bank' ? 'font-medium' : ''} text-center`}>Bank Account</span>
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setProfile(prev => ({ ...prev, paymentPreference: 'upi' }))}
-            className={`flex-1 flex flex-col items-center justify-center space-y-2 py-4 px-4 rounded-xl border transition-all ${
-              profile.paymentPreference === 'upi'
-                ? 'bg-[#c5e82e]/15 border-[#c5e82e] shadow-md'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              profile.paymentPreference === 'upi' ? 'bg-[#c5e82e]/20' : 'bg-gray-100'
-            }`}>
-              <IndianRupee className={`w-6 h-6 ${profile.paymentPreference === 'upi' ? 'text-[#c5e82e]' : 'text-gray-400'}`} />
+
+            <div className="mt-2">
+              <div className={`border-2 rounded-lg overflow-hidden transition-all ${
+                idDocumentUploaded 
+                  ? 'border-[#c5e82e] bg-[#c5e82e]/5 shadow-md' 
+                  : 'border-gray-300 border-dashed bg-gray-50 hover:bg-gray-100'
+              }`}>
+                {idDocumentUploaded ? (
+                  // Uploaded state
+                  <div className="p-4">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-[#c5e82e]/20 flex items-center justify-center mr-3">
+                        <Check className="w-5 h-5 text-[#c5e82e]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{documentName}</p>
+                        <p className="text-xs text-gray-500">Document uploaded successfully</p>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => document.getElementById('id-upload')?.click()}
+                        className="text-xs font-medium text-[#c5e82e] hover:text-[#a5c824]"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // Not uploaded state
+                  <label 
+                    className="flex items-center justify-center w-full h-32 cursor-pointer"
+                    htmlFor="id-upload"
+                  >
+                    {uploading ? (
+                      // Uploading state
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 mb-2 border-3 border-[#c5e82e] border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-sm font-medium text-gray-600">Uploading document...</p>
+                      </div>
+                    ) : (
+                      // Default state
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500">
+                          <span className="font-medium">Upload {profile.idType} document</span>
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          JPG, PNG or PDF (max 5MB)
+                        </p>
+                      </div>
+                    )}
+                  </label>
+                )}
+                <input 
+                  id="id-upload"
+                  type="file"
+                  className="hidden"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={handleIdUpload}
+                  disabled={uploading}
+                />
+              </div>
             </div>
-            <span className={`${profile.paymentPreference === 'upi' ? 'font-medium' : ''} text-center`}>UPI</span>
-          </button>
-        </div>
-
-        <AnimatePresence mode="wait">
-          {profile.paymentPreference === 'bank' ? (
-            <motion.div 
-              key="bank-details"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4 bg-gray-50 p-5 rounded-xl border border-gray-200"
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Bank Name
-                </label>
-                <Input
-                  type="text"
-                  name="bankName"
-                  value={profile.bankName}
-                  onChange={handleInputChange}
-                  placeholder="Enter your bank name"
-                  className="py-5 rounded-xl bg-white border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Account Number
-                </label>
-                <Input
-                  type="text"
-                  name="accountNumber"
-                  value={profile.accountNumber}
-                  onChange={handleInputChange}
-                  placeholder="Enter your account number"
-                  className="py-5 rounded-xl bg-white border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  IFSC Code
-                </label>
-                <Input
-                  type="text"
-                  name="ifscCode"
-                  value={profile.ifscCode}
-                  onChange={handleInputChange}
-                  placeholder="Enter IFSC code"
-                  className="py-5 rounded-xl bg-white border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20"
-                />
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="upi-details"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-gray-50 p-5 rounded-xl border border-gray-200"
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  UPI ID
-                </label>
-                <Input
-                  type="text"
-                  name="upiId"
-                  value={profile.upiId}
-                  onChange={handleInputChange}
-                  placeholder="Enter your UPI ID (example@bank)"
-                  className="py-5 rounded-xl bg-white border-gray-200 focus:border-[#c5e82e] focus:ring-[#c5e82e]/20"
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <p className="text-center text-sm text-gray-500">
-        Your payment details are securely stored and can be updated later
-      </p>
-    </motion.div>
-  );
-      
-      default:
-        return null;
-    }
-  };
+          </div>
+        </motion.div>
+      );
+    
+    default:
+      return null;
+  }
+};
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -1213,7 +1151,7 @@ case 5:
         {/* Navigation buttons - fixed at bottom */}
         <div className="mt-6 sticky bottom-4">
           {phoneVerificationStep === 3 && (
-            currentStep < 5 ? (
+            currentStep < 3 ? (
               <Button
                 onClick={goToNextStep}
                 className="w-full py-6 rounded-xl bg-black text-white hover:bg-gray-800 border-b-2 border-[#c5e82e] shadow-lg hover:shadow-xl transition-all"
